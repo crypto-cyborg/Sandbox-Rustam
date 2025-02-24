@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "OG50fH5SLrKh5qbAqCe2pJ9xPg3L0XXpcMFQBrGAHv0=",
+  "Source": "Sandbox.api",
+  "BasePath": "_content/Sandbox.api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
