@@ -1,8 +1,8 @@
 {
   "Version": 1,
-  "Hash": "OG50fH5SLrKh5qbAqCe2pJ9xPg3L0XXpcMFQBrGAHv0=",
-  "Source": "Sandbox.api",
-  "BasePath": "_content/Sandbox.api",
+  "Hash": "pxrUUwBMCOwKJukpgZZ1x1UKabHkwYA7LKSH2HLtQ94=",
+  "Source": "Sandbox.WebAPI",
+  "BasePath": "_content/Sandbox.WebAPI",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],

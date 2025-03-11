@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Sandbox.Shared\Sandbox.Shared.csproj" />
+    </ItemGroup>
+
 </Project>

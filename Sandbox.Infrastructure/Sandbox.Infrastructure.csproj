@@ -20,7 +20,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Sandbox.Application\Sandbox.Application.csproj" />
       <ProjectReference Include="..\Sandbox.Core\Sandbox.Core.csproj" />
     </ItemGroup>
 

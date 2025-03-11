@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Sandbox.Core.Entities;
+using Microsoft.Extensions.DependencyInjection;
+using Sandbox.Infrastructure.Services;
 
 namespace Sandbox.Infrastructure.Data
 {
@@ -9,8 +11,14 @@ namespace Sandbox.Infrastructure.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<Position> Positions { get; set; }
         public DbSet<Wallet> Wallets { get; set; }
+        
+        private readonly IServiceProvider _serviceProvider;
 
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public AppDbContext(DbContextOptions<AppDbContext> options, IServiceProvider serviceProvider) 
+            : base(options)
+        {
+            _serviceProvider = serviceProvider;
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,65 +33,70 @@ namespace Sandbox.Infrastructure.Data
                 .HasForeignKey<Wallet>(w => w.Id)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Wallet>()
-                .HasMany(w => w.Orders)
-                .WithOne(o => o.Wallet)
+            modelBuilder.Entity<Order>()
+                .HasOne(o => o.Wallet)
+                .WithMany(w => w.Orders)
                 .HasForeignKey(o => o.WalletId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Wallet>()
-                .HasMany(w => w.Positions)
-                .WithOne(p => p.Wallet)
+            modelBuilder.Entity<Position>()
+                .HasOne(p => p.Wallet)
+                .WithMany(w => w.Positions)
                 .HasForeignKey(p => p.WalletId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            modelBuilder.Entity<Order>()
-                .Property(o => o.CreatedAt)
-                .HasDefaultValueSql("GETDATE()");
-
-            modelBuilder.Entity<Order>()
-                .Property(o => o.UpdatedAt)
-                .HasDefaultValueSql("GETDATE()");
+            modelBuilder.Entity<Position>()
+                .HasOne(p => p.StopLossOrder)
+                .WithOne()
+                .HasForeignKey<Position>(p => p.StopLossOrderId)
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Position>()
-                .Property(p => p.OpenedAt)
-                .HasDefaultValueSql("GETDATE()");
+                .HasOne(p => p.TakeProfitOrder)
+                .WithOne()
+                .HasForeignKey<Position>(p => p.TakeProfitOrderId)
+                .OnDelete(DeleteBehavior.NoAction);
 
-            modelBuilder.Entity<Position>()
-                .Property(p => p.UpdatedAt)
-                .HasDefaultValueSql("GETDATE()");
-
-            modelBuilder.Entity<Order>()
-                .HasIndex(o => o.Symbol);
-
-            modelBuilder.Entity<Position>()
-                .HasIndex(p => p.Symbol);
-
-            modelBuilder.Entity<Account>()
-                .HasIndex(a => a.Email)
-                .IsUnique();
+            modelBuilder.Entity<Order>().Property(o => o.Quantity).HasPrecision(18, 8);
+            modelBuilder.Entity<Order>().Property(o => o.Price).HasPrecision(18, 8);
+            modelBuilder.Entity<Order>().Property(o => o.Leverage).HasPrecision(18, 2);
+            modelBuilder.Entity<Position>().Property(p => p.Quantity).HasPrecision(18, 8);
+            modelBuilder.Entity<Position>().Property(p => p.AverageEntryPrice).HasPrecision(18, 8);
+            modelBuilder.Entity<Position>().Property(p => p.CurrentPrice).HasPrecision(18, 8);
+            modelBuilder.Entity<Position>().Property(p => p.InitialMargin).HasPrecision(18, 8);
+            modelBuilder.Entity<Position>().Property(p => p.Leverage).HasPrecision(18, 2);
+            modelBuilder.Entity<Position>().Property(p => p.MaintenanceMarginRate).HasPrecision(18, 4);
+            modelBuilder.Entity<Wallet>().Property(w => w.Balance).HasPrecision(18, 8);
         }
 
-        public override int SaveChanges()
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            var entries = ChangeTracker
-                .Entries()
-                .Where(e => (e.Entity is Order || e.Entity is Position) &&
-                            (e.State == EntityState.Modified || e.State == EntityState.Added));
+            var walletIdsToUpdate = ChangeTracker.Entries()
+                .Where(e => e.Entity is Wallet || e.Entity is Order || e.Entity is Position)
+                .Select(e => 
+                    (e.Entity as Wallet)?.Id 
+                    ?? (e.Entity as Order)?.WalletId 
+                    ?? (e.Entity as Position)?.WalletId)
+                .Where(id => id.HasValue && id.Value != Guid.Empty) 
+                .Select(id => id.Value) 
+                .Distinct()
+                .ToList();
 
-            foreach (var entry in entries)
+            int result = await base.SaveChangesAsync(cancellationToken);
+
+            if (walletIdsToUpdate.Any())
             {
-                if (entry.Entity is Order order)
+                using var scope = _serviceProvider.CreateScope();
+                var walletWebSocketService = scope.ServiceProvider.GetRequiredService<WalletWebSocketService>();
+        
+                foreach (var walletId in walletIdsToUpdate)
                 {
-                    order.UpdatedAt = DateTime.UtcNow;
-                }
-                else if (entry.Entity is Position position)
-                {
-                    position.UpdatedAt = DateTime.UtcNow;
+                    await walletWebSocketService.BroadcastUpdate(walletId);
                 }
             }
 
-            return base.SaveChanges();
+            return result;
         }
+
     }
 }

@@ -28,6 +28,9 @@
             "projectReferences": {
               "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Core/Sandbox.Core.csproj": {
                 "projectPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Core/Sandbox.Core.csproj"
+              },
+              "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Infrastructure/Sandbox.Infrastructure.csproj": {
+                "projectPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Infrastructure/Sandbox.Infrastructure.csproj"
               }
             }
           }
@@ -46,6 +49,12 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
+          "dependencies": {
+            "AutoMapper.Extensions.Microsoft.DependencyInjection": {
+              "target": "Package",
+              "version": "[12.0.1, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -87,6 +96,152 @@
         "frameworks": {
           "net9.0": {
             "targetAlias": "net9.0",
+            "projectReferences": {
+              "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Shared/Sandbox.Shared.csproj": {
+                "projectPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Shared/Sandbox.Shared.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.200/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Infrastructure/Sandbox.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Infrastructure/Sandbox.Infrastructure.csproj",
+        "projectName": "Sandbox.Infrastructure",
+        "projectPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Infrastructure/Sandbox.Infrastructure.csproj",
+        "packagesPath": "/Users/rustam/.nuget/packages/",
+        "outputPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Infrastructure/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/rustam/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {
+              "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Core/Sandbox.Core.csproj": {
+                "projectPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Core/Sandbox.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.2, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.2, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[9.0.2, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[9.0.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/9.0.200/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Shared/Sandbox.Shared.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Shared/Sandbox.Shared.csproj",
+        "projectName": "Sandbox.Shared",
+        "projectPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Shared/Sandbox.Shared.csproj",
+        "packagesPath": "/Users/rustam/.nuget/packages/",
+        "outputPath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.Shared/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/Users/rustam/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
             "projectReferences": {}
           }
         },
@@ -104,6 +259,12 @@
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
+          "dependencies": {
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
