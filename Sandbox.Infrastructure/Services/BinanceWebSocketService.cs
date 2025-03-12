@@ -98,7 +98,6 @@ namespace Sandbox.Infrastructure.Services
 
         private void ProcessMessage(string message)
         {
-            Console.WriteLine($"Received message: {message}");
             try
             {
                 var data = JsonSerializer.Deserialize<BinanceTickerMessage>(message);
@@ -106,7 +105,6 @@ namespace Sandbox.Infrastructure.Services
                 {
                     if (decimal.TryParse(data.c, NumberStyles.Float, CultureInfo.InvariantCulture, out var price))
                     {
-                        Console.WriteLine($"Received price: {price} for {data.s}"); 
                         handler.Invoke(price);
                     }
                 }

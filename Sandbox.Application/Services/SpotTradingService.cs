@@ -30,16 +30,28 @@ namespace Sandbox.Application.Services
 
         public async Task<OrderDto> PlaceOrderAsync(OrderDto orderDto)
         {
+            var order = _mapper.Map<Order>(orderDto);
+            
             var wallet = await _context.Wallets
                 .Include(w => w.Orders)
                 .Include(w => w.Positions)
-                .FirstOrDefaultAsync(w => w.Id == orderDto.WalletId);
+                .FirstOrDefaultAsync(w => w.Id == order.WalletId);
 
             if (wallet == null) throw new ApplicationException("Wallet not found.");
+            
 
-            var order = _mapper.Map<Order>(orderDto);
-            if (wallet.Balance < order.Quantity * order.Price)
-                throw new ApplicationException("Insufficient balance.");
+            if (order.Type == OrderType.Market)
+            {
+                var price = await _webSocketService.GetPriceAsync(order.Symbol);
+                if (wallet.Balance < order.Quantity * price)
+                    throw new ApplicationException("Insufficient balance.");
+            }
+            else if (order.Type == OrderType.Limit)
+            {
+                if (wallet.Balance < order.Quantity * order.Price)
+                    throw new ApplicationException("Insufficient balance.");
+            }
+            
 
             wallet.Balance -= order.Quantity * order.Price;
             order.Status = OrderStatus.Open;
@@ -50,6 +62,7 @@ namespace Sandbox.Application.Services
             _webSocketService.SubscribeAsync(order.Symbol, async (currentPrice) =>
             {
                 await TrackPosition(order, currentPrice);
+                await Task.Delay(TimeSpan.FromMinutes(5));
             });
 
             return _mapper.Map<OrderDto>(order);
@@ -63,7 +76,7 @@ namespace Sandbox.Application.Services
             //var context = _serviceProvider.GetRequiredService<AppDbContext>();
 
             var position = await context.Positions
-                .FirstOrDefaultAsync(p =>
+                .FirstOrDefaultAsync(p => 
                     p.Symbol == order.Symbol && p.WalletId == order.WalletId && p.Status == PositionStatus.Open);
 
             if (position == null)
@@ -150,7 +163,8 @@ namespace Sandbox.Application.Services
                     AverageEntryPrice = executedPrice,
                     CurrentPrice = executedPrice,
                     Status = PositionStatus.Open,
-                    OpenedAt = DateTime.UtcNow
+                    OpenedAt = DateTime.UtcNow,
+                    InitialMargin = order.Quantity * executedPrice,
                 };
                 context.Positions.Add(position);
             }
