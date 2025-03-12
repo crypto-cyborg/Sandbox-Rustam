@@ -31,7 +31,9 @@ namespace Sandbox.Application.Mapping
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => Enum.Parse<PositionStatus>(src.Status)))
                 .ForMember(dest => dest.Direction, opt => opt.MapFrom(src => Enum.Parse<PositionDirection>(src.Direction)));
 
-            CreateMap<Account, AccountDto>().ReverseMap();
+            CreateMap<Account, AccountDto>()
+                .ForMember(dest => dest.WalletId, opt => opt.MapFrom(src => src.Wallet.Id))
+                .ReverseMap();
             
             CreateMap<CreateAccountDto, Account>()
                 .ForMember(dest => dest.Wallet, opt => opt.MapFrom(src => new Wallet()));

@@ -16,14 +16,16 @@ namespace Sandbox.Application.Services
         private readonly BinanceWebSocketService _webSocketService;
         private readonly IMapper _mapper;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IServiceProvider _serviceProvider;
 
         public SpotTradingService(AppDbContext context, BinanceWebSocketService webSocketService, IMapper mapper,
-            IServiceScopeFactory scopeFactory)
+            IServiceScopeFactory scopeFactory, IServiceProvider serviceProvider)
         {
             _context = context;
             _webSocketService = webSocketService;
             _mapper = mapper;
             _scopeFactory = scopeFactory;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<OrderDto> PlaceOrderAsync(OrderDto orderDto)
@@ -57,9 +59,10 @@ namespace Sandbox.Application.Services
         private async Task TrackPosition(Order order, decimal currentPrice)
         {
             var scope = _scopeFactory.CreateScope();
-            var _context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            //var context = _serviceProvider.GetRequiredService<AppDbContext>();
 
-            var position = await _context.Positions
+            var position = await context.Positions
                 .FirstOrDefaultAsync(p =>
                     p.Symbol == order.Symbol && p.WalletId == order.WalletId && p.Status == PositionStatus.Open);
 
@@ -67,7 +70,7 @@ namespace Sandbox.Application.Services
             {
                 if (order.Type == OrderType.Market || (order.Type == OrderType.Limit && order.Price <= currentPrice))
                 {
-                    await ExecuteOrderAsync(order, currentPrice);
+                    await ExecuteOrderAsync(order, currentPrice, context);
                 }
 
                 return;
@@ -87,7 +90,7 @@ namespace Sandbox.Application.Services
             }
             else
             {
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
         }
 
@@ -123,9 +126,9 @@ namespace Sandbox.Application.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task ExecuteOrderAsync(Order order, decimal executedPrice)
+        public async Task ExecuteOrderAsync(Order order, decimal executedPrice, AppDbContext context)
         {
-            var wallet = await _context.Wallets.Include(w => w.Positions)
+            var wallet = await context.Wallets.Include(w => w.Positions)
                 .FirstOrDefaultAsync(w => w.Id == order.WalletId);
             if (wallet == null) return;
 
@@ -133,7 +136,7 @@ namespace Sandbox.Application.Services
             order.ExecutedAt = DateTime.UtcNow;
             order.Price = executedPrice;
 
-            var position = await _context.Positions
+            var position = await context.Positions
                 .FirstOrDefaultAsync(p =>
                     p.Symbol == order.Symbol && p.WalletId == wallet.Id && p.Status == PositionStatus.Open);
 
@@ -149,7 +152,7 @@ namespace Sandbox.Application.Services
                     Status = PositionStatus.Open,
                     OpenedAt = DateTime.UtcNow
                 };
-                _context.Positions.Add(position);
+                context.Positions.Add(position);
             }
             else
             {
@@ -182,7 +185,7 @@ namespace Sandbox.Application.Services
                 position.CurrentPrice = executedPrice;
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         public async Task ClosePositionAsync(Guid positionId)

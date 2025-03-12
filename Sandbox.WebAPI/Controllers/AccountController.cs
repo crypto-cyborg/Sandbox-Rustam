@@ -19,7 +19,7 @@ namespace Sandbox.WebAPI.Controllers
         public async Task<ActionResult<AccountDto>> CreateAccount([FromBody] CreateAccountDto createAccountDto)
         {
             var account = await _accountService.CreateAccountAsync(createAccountDto);
-            return CreatedAtAction(nameof(GetAccountById), new { accountId = account.Id }, account);
+            return Ok(account);
         }
 
         [HttpGet("{accountId}")]

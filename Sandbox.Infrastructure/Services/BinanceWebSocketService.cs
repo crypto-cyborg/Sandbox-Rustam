@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -44,7 +45,7 @@ namespace Sandbox.Infrastructure.Services
             var subscribeMessage = new
             {
                 method = "SUBSCRIBE",
-                @params = new[] { $"{lowerSymbol}@ticker" },  // <-- Меняем "@trade" на "@ticker"
+                @params = new[] { $"{lowerSymbol}@ticker" },  
                 id = 1
             };
 
@@ -67,7 +68,7 @@ namespace Sandbox.Infrastructure.Services
                 var unsubscribeMessage = new
                 {
                     method = "UNSUBSCRIBE",
-                    @params = new[] { $"{lowerSymbol}@ticker" }, // <-- Меняем "@trade" на "@ticker"
+                    @params = new[] { $"{lowerSymbol}@ticker" }, 
                     id = 1
                 };
 
@@ -103,7 +104,7 @@ namespace Sandbox.Infrastructure.Services
                 var data = JsonSerializer.Deserialize<BinanceTickerMessage>(message);
                 if (data != null && _priceUpdateHandlers.TryGetValue(data.s.ToLower(), out var handler))
                 {
-                    if (decimal.TryParse(data.c, out var price))
+                    if (decimal.TryParse(data.c, NumberStyles.Float, CultureInfo.InvariantCulture, out var price))
                     {
                         Console.WriteLine($"Received price: {price} for {data.s}"); 
                         handler.Invoke(price);
@@ -136,7 +137,7 @@ namespace Sandbox.Infrastructure.Services
         private class BinanceTickerMessage
         {
             public string s { get; set; }  // Symbol
-            public string c { get; set; }  // Current price (Ticker price)
+            public string c { get; set; }  // Current price 
         }
 
         private class BinancePriceResponse

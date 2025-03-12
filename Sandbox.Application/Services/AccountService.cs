@@ -26,7 +26,7 @@ namespace Sandbox.Application.Services;
             var account = new Account
             {
                 Email = createAccountDto.Email,
-                Wallet = new Wallet() // Создаем кошелек при регистрации
+                Wallet = new Wallet() 
             };
 
             _context.Accounts.Add(account);
