@@ -6,6 +6,8 @@ using Sandbox.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Sandbox.Infrastructure.Services;
 using Sandbox.Shared.DTOs;
+using Sandbox.Shared.Results;
+using Order = Sandbox.Core.Entities.Order;
 
 namespace Sandbox.Application.Services
 {
@@ -22,14 +24,17 @@ namespace Sandbox.Application.Services
             _mapper = mapper;
         }
 
-        public async Task<OrderDto> PlaceOrderAsync(OrderDto orderDto)
+        public async Task<Result<OrderDto>> PlaceOrderAsync(OrderDto orderDto)
         {
             var wallet = await _context.Wallets
                 .Include(w => w.Orders)
                 .Include(w => w.Positions)
                 .FirstOrDefaultAsync(w => w.Id == orderDto.WalletId);
 
-            if (wallet == null) throw new ApplicationException("Wallet not found.");
+            if (wallet == null)
+            {
+                return Result<OrderDto>.Failure("Wallet not found");
+            }
 
             var order = _mapper.Map<Order>(orderDto);
             var leverage = order.Leverage > 0 ? order.Leverage : 1;
@@ -38,14 +43,18 @@ namespace Sandbox.Application.Services
             
             if (leverage > maxLeverage)
             {
-                throw new ApplicationException($"Insufficient funds for the selected leverage. Maximum possible leverage for this balance: {Math.Floor(maxLeverage)}x");
+                return Result<OrderDto>
+                    .Failure($"Insufficient funds for the selected leverage. " +
+                             $"Maximum possible leverage for this balance: {Math.Floor(maxLeverage)}x");
             }
             
             var requiredMargin = (order.Quantity * order.Price) / leverage;
             requiredMargin = Math.Max(requiredMargin, order.Quantity * order.Price * 0.05m);
 
             if (wallet.Balance < requiredMargin)
-                throw new ApplicationException("Insufficient funds for margin.");
+            {
+                return Result<OrderDto>.Failure("Insufficient funds for the selected order");
+            }
 
             wallet.Balance -= requiredMargin;
             order.Status = OrderStatus.Open;
@@ -58,7 +67,7 @@ namespace Sandbox.Application.Services
                 await TrackPosition(order, currentPrice);
             });
 
-            return _mapper.Map<OrderDto>(order);
+            return Result<OrderDto>.Success(_mapper.Map<OrderDto>(order));
         }
 
         private async Task TrackPosition(Order order, decimal currentPrice)
@@ -154,14 +163,14 @@ namespace Sandbox.Application.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task ClosePositionAsync(Guid positionId)
+        public async Task<Result<PositionDto>> ClosePositionAsync(Guid positionId)
         {
             var position = await _context.Positions.FindAsync(positionId);
             if (position == null) throw new ApplicationException("Position not found.");
 
-            await ClosePosition(position, false);
+            return await ClosePosition(position, false);
         }
-        public async Task CloseOrderAsync(Guid orderId)
+        public async Task<Result<OrderDto>> CloseOrderAsync(Guid orderId)
         {
             var order = await _context.Orders.Include(o => o.Wallet).FirstOrDefaultAsync(o => o.Id == orderId);
             if (order == null) throw new ApplicationException("Order not found.");
@@ -190,12 +199,14 @@ namespace Sandbox.Application.Services
             order.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            return Result<OrderDto>.Success(_mapper.Map<OrderDto>(order));
         }
 
-        private async Task ClosePosition(Position position, bool isLiquidation)
+        private async Task<Result<PositionDto>> ClosePosition(Position position, bool isLiquidation)
         {
             var wallet = await _context.Wallets.FindAsync(position.WalletId);
-            if (wallet == null) return;
+            if (wallet == null) return Result<PositionDto>.Failure("Wallet not found.");
 
             decimal pnl;
             if (position.Direction == PositionDirection.Long)
@@ -215,9 +226,11 @@ namespace Sandbox.Application.Services
             position.ClosedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            
+            return Result<PositionDto>.Success(_mapper.Map<PositionDto>(position));
         }
         
-        public async Task SetStopLossAsync(Guid positionId, decimal stopLossPrice)
+        public async Task<Result<OrderDto>> SetStopLossAsync(Guid positionId, decimal stopLossPrice)
         {
             var position = await _context.Positions.FindAsync(positionId);
             if (position == null) throw new ApplicationException("Position not found.");
@@ -236,9 +249,10 @@ namespace Sandbox.Application.Services
             _context.Orders.Add(stopLossOrder);
             position.StopLossOrderId = stopLossOrder.Id;
             await _context.SaveChangesAsync();
+            return Result<OrderDto>.Success(_mapper.Map<OrderDto>(stopLossOrder));
         }
 
-        public async Task SetTakeProfitAsync(Guid positionId, decimal takeProfitPrice)
+        public async Task<Result<OrderDto>> SetTakeProfitAsync(Guid positionId, decimal takeProfitPrice)
         {
             var position = await _context.Positions.FindAsync(positionId);
             if (position == null) throw new ApplicationException("Position not found.");
@@ -257,23 +271,25 @@ namespace Sandbox.Application.Services
             _context.Orders.Add(takeProfitOrder);
             position.TakeProfitOrderId = takeProfitOrder.Id;
             await _context.SaveChangesAsync();
+            
+            return Result<OrderDto>.Success(_mapper.Map<OrderDto>(takeProfitOrder));
         }
 
-        public async Task<IEnumerable<OrderDto>> GetActiveOrdersAsync(Guid walletId)
+        public async Task<Result<IEnumerable<OrderDto>>> GetActiveOrdersAsync(Guid walletId)
         {
             
             var orders = _context.Orders
                 .Where(o => o.WalletId == walletId && o.Status == OrderStatus.Open)
                 .ToListAsync();
-            return _mapper.Map<IEnumerable<OrderDto>>(orders);
+            return Result<IEnumerable<OrderDto>>.Success(_mapper.Map<IEnumerable<OrderDto>>(orders));
         }
 
-        public async Task<IEnumerable<PositionDto>> GetActivePositionsAsync(Guid walletId)
+        public async Task<Result<IEnumerable<PositionDto>>> GetActivePositionsAsync(Guid walletId)
         {
             var positions = _context.Positions
                 .Where(p => p.WalletId == walletId && p.Status == PositionStatus.Open)
                 .ToListAsync();
-            return _mapper.Map<IEnumerable<PositionDto>>(positions);
+            return Result<IEnumerable<PositionDto>>.Success(_mapper.Map<IEnumerable<PositionDto>>(positions));
         }
     }
 }

@@ -3,6 +3,7 @@ using Sandbox.Infrastructure.Data;
 using Sandbox.Shared.DTOs;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Sandbox.Shared.Results;
 
 namespace Sandbox.Application.Services
 {
@@ -17,15 +18,15 @@ namespace Sandbox.Application.Services
             _mapper = mapper;
         }
 
-        public async Task<WalletDto> GetWalletAsync(Guid walletId)
+        public async Task<Result<WalletDto>> GetWalletAsync(Guid walletId)
         {
             var wallet = await _context.Wallets.FindAsync(walletId);
             if (wallet == null) throw new Exception("Кошелек не найден");
 
-            return _mapper.Map<WalletDto>(wallet);
+            return Result<WalletDto>.Success(_mapper.Map<WalletDto>(wallet));
         }
 
-        public async Task<WalletDto> DepositAsync(Guid walletId, decimal amount)
+        public async Task<Result<WalletDto>> DepositAsync(Guid walletId, decimal amount)
         {
             var wallet = await _context.Wallets.FindAsync(walletId);
             if (wallet == null) throw new ApplicationException("Wallet not found");
@@ -33,10 +34,10 @@ namespace Sandbox.Application.Services
             wallet.Balance += amount;
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<WalletDto>(wallet);
+            return Result<WalletDto>.Success(_mapper.Map<WalletDto>(wallet));
         }
 
-        public async Task<WalletDto> WithdrawAsync(Guid walletId, decimal amount)
+        public async Task<Result<WalletDto>> WithdrawAsync(Guid walletId, decimal amount)
         {
             var wallet = await _context.Wallets.FindAsync(walletId);
             if (wallet == null) throw new ApplicationException("Wallet not found");
@@ -46,7 +47,7 @@ namespace Sandbox.Application.Services
             wallet.Balance -= amount;
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<WalletDto>(wallet);
+            return Result<WalletDto>.Success(_mapper.Map<WalletDto>(wallet));
         }
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Sandbox.Application.Services;
 using Sandbox.Core.Interfaces;
 using Sandbox.Shared.DTOs;
 
@@ -10,59 +11,58 @@ namespace Sandbox.WebAPI.Controllers
     {
         private readonly IOrderService _orderService;
 
-        public SpotTradingController([FromKeyedServices("Spot")] IOrderService orderService)
-        {
-            _orderService = orderService;
-        }
-
+         public SpotTradingController([FromKeyedServices("Spot")] IOrderService orderService)
+         {
+             _orderService = orderService;
+         }
+        
         [HttpPost("place-order")]
         public async Task<IActionResult> PlaceOrder([FromBody] OrderDto orderDto)
         {
-            var order = await _orderService.PlaceOrderAsync(orderDto);
-            return Ok(order);
+            var result = await _orderService.PlaceOrderAsync(orderDto);
+            return Ok(result);
         }
 
         [HttpPost("close-order/{orderId}")]
         public async Task<IActionResult> CloseOrder(Guid orderId)
         {
-            await _orderService.CloseOrderAsync(orderId);
-
-            return Ok();
+            var result =  await _orderService.CloseOrderAsync(orderId);
+            return Ok(result);
         }
 
         [HttpPost("close-position/{positionId}")]
         public async Task<IActionResult> ClosePosition(Guid positionId)
         {
-            await _orderService.ClosePositionAsync(positionId);
-            return Ok();
+            var result =  await _orderService.ClosePositionAsync(positionId);
+            return Ok(result);
         }
 
         [HttpPost("set-stop-loss/{positionId}")]
         public async Task<IActionResult> SetStopLoss(Guid positionId, [FromBody] decimal stopLossPrice)
         {
-            await _orderService.SetStopLossAsync(positionId, stopLossPrice);
-            return Ok();
+            var result = await _orderService.SetStopLossAsync(positionId, stopLossPrice);
+            return Ok(result);
         }
 
         [HttpPost("set-take-profit/{positionId}")]
         public async Task<IActionResult> SetTakeProfit(Guid positionId, [FromBody] decimal takeProfitPrice)
         {
-            await _orderService.SetTakeProfitAsync(positionId, takeProfitPrice);
-            return Ok();
+            var result =  await _orderService.SetTakeProfitAsync(positionId, takeProfitPrice);
+            return Ok(result);
         }
 
         [HttpGet("active-orders/{walletId}")]
         public async Task<IActionResult> GetActiveOrders(Guid walletId)
         {
-            var orders = await _orderService.GetActiveOrdersAsync(walletId);
-            return Ok(orders);
+            var result = await _orderService.GetActiveOrdersAsync(walletId);
+            return Ok(result);
         }
 
         [HttpGet("active-positions/{walletId}")]
         public async Task<IActionResult> GetActivePositions(Guid walletId)
         {
-            var positions = await _orderService.GetActivePositionsAsync(walletId);
-            return Ok(positions);
+            var result = await _orderService.GetActivePositionsAsync(walletId);
+            return Ok(result);
         }
     }
 }

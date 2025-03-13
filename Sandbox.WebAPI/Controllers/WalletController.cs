@@ -18,22 +18,22 @@ namespace Sandbox.WebAPI.Controllers
         [HttpGet("{walletId}")]
         public async Task<ActionResult<WalletDto>> GetWallet(Guid walletId)
         {
-            var wallet = await _walletService.GetWalletAsync(walletId);
-            return Ok(wallet);
+            var result = await _walletService.GetWalletAsync(walletId);
+            return Ok(result);
         }
         
         [HttpPost("{walletId}/deposit")]
         public async Task<ActionResult<WalletDto>> Deposit(Guid walletId, [FromBody] WalletTransactionDto transaction)
         {
-            var updatedWallet = await _walletService.DepositAsync(walletId, transaction.Amount);
-            return Ok(updatedWallet);
+            var result = await _walletService.DepositAsync(walletId, transaction.Amount);
+            return Ok(result);
         }
         
         [HttpPost("{walletId}/withdraw")]
         public async Task<ActionResult<WalletDto>> Withdraw(Guid walletId, [FromBody] WalletTransactionDto transaction)
         {
-            var updatedWallet = await _walletService.WithdrawAsync(walletId, transaction.Amount);
-            return Ok(updatedWallet);
+            var result = await _walletService.WithdrawAsync(walletId, transaction.Amount);
+            return Ok(result);
         }
     }
 }

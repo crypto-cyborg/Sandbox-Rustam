@@ -4,6 +4,7 @@ using Sandbox.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Sandbox.Shared.DTOs;
 using AutoMapper;
+using Sandbox.Shared.Results;
 
 namespace Sandbox.Application.Services;
 
@@ -18,10 +19,12 @@ namespace Sandbox.Application.Services;
             _mapper = mapper;
         }
 
-        public async Task<AccountDto> CreateAccountAsync(CreateAccountDto createAccountDto)
+        public async Task<Result<AccountDto>> CreateAccountAsync(CreateAccountDto createAccountDto)
         {
             if (await _context.Accounts.AnyAsync(a => a.Email == createAccountDto.Email))
-                throw new Exception("Аккаунт с таким Email уже существует.");
+            {
+                return Result<AccountDto>.Failure("Email already exists");
+            }
 
             var account = new Account
             {
@@ -32,27 +35,34 @@ namespace Sandbox.Application.Services;
             _context.Accounts.Add(account);
             await _context.SaveChangesAsync();
 
-            return _mapper.Map<AccountDto>(account);
+            return Result<AccountDto>.Success(_mapper.Map<AccountDto>(account));
         }
 
-        public async Task DeleteAccountAsync(Guid id)
+        public async Task<Result<AccountDto>> DeleteAccountAsync(Guid id)
         {
             var account = await _context.Accounts.FirstOrDefaultAsync(a => a.Id == id);
 
             if (account == null)
-                throw new Exception("Аккаунт не найден.");
+            {
+                return Result<AccountDto>.Failure("Account not found");
+            }
 
             _context.Accounts.Remove(account); 
 
             await _context.SaveChangesAsync();
+            
+            return Result<AccountDto>.Success(_mapper.Map<AccountDto>(account));
         }
 
 
-        public async Task<AccountDto> GetAccountByIdAsync(Guid accountId)
+        public async Task<Result<AccountDto>> GetAccountByIdAsync(Guid accountId)
         {
             var account = await _context.Accounts.Include(a => a.Wallet).FirstOrDefaultAsync(a => a.Id == accountId);
-            if (account == null) throw new Exception("Аккаунт не найден.");
+            if (account == null)
+            {
+                return Result<AccountDto>.Failure("Account not found");
+            }
 
-            return _mapper.Map<AccountDto>(account);
+            return Result<AccountDto>.Success(_mapper.Map<AccountDto>(account));
         }
     }

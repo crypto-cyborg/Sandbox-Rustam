@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "v45Ici27bXQ=",
+  "dgSpecHash": "Fr51rzuNNG4=",
   "success": true,
   "projectFilePath": "/Users/rustam/Documents/Programming/TradingBot/Sandbox-service/Sandbox.WebAPI/Sandbox.WebAPI.csproj",
   "expectedPackageFiles": [
@@ -37,6 +37,9 @@
     "/Users/rustam/.nuget/packages/microsoft.extensions.dependencyinjection/9.0.2/microsoft.extensions.dependencyinjection.9.0.2.nupkg.sha512",
     "/Users/rustam/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.2/microsoft.extensions.dependencyinjection.abstractions.9.0.2.nupkg.sha512",
     "/Users/rustam/.nuget/packages/microsoft.extensions.dependencymodel/9.0.2/microsoft.extensions.dependencymodel.9.0.2.nupkg.sha512",
+    "/Users/rustam/.nuget/packages/microsoft.extensions.diagnostics.abstractions/9.0.0/microsoft.extensions.diagnostics.abstractions.9.0.0.nupkg.sha512",
+    "/Users/rustam/.nuget/packages/microsoft.extensions.fileproviders.abstractions/9.0.0/microsoft.extensions.fileproviders.abstractions.9.0.0.nupkg.sha512",
+    "/Users/rustam/.nuget/packages/microsoft.extensions.hosting.abstractions/9.0.0/microsoft.extensions.hosting.abstractions.9.0.0.nupkg.sha512",
     "/Users/rustam/.nuget/packages/microsoft.extensions.logging/9.0.2/microsoft.extensions.logging.9.0.2.nupkg.sha512",
     "/Users/rustam/.nuget/packages/microsoft.extensions.logging.abstractions/9.0.2/microsoft.extensions.logging.abstractions.9.0.2.nupkg.sha512",
     "/Users/rustam/.nuget/packages/microsoft.extensions.options/9.0.2/microsoft.extensions.options.9.0.2.nupkg.sha512",

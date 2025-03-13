@@ -18,22 +18,22 @@ namespace Sandbox.WebAPI.Controllers
         [HttpPost("create")]
         public async Task<ActionResult<AccountDto>> CreateAccount([FromBody] CreateAccountDto createAccountDto)
         {
-            var account = await _accountService.CreateAccountAsync(createAccountDto);
-            return Ok(account);
+            var result = await _accountService.CreateAccountAsync(createAccountDto);
+            return Ok(result);
         }
 
         [HttpGet("{accountId}")]
         public async Task<ActionResult<AccountDto>> GetAccountById(Guid accountId)
         {
-            var account = await _accountService.GetAccountByIdAsync(accountId);
-            return Ok(account);
+            var result = await _accountService.GetAccountByIdAsync(accountId);
+            return Ok(result);
         }
         
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAccount(Guid id)
         {
-            await _accountService.DeleteAccountAsync(id);
-            return NoContent(); 
+            var result = await _accountService.DeleteAccountAsync(id);
+            return Ok(result); 
         }
 
     }

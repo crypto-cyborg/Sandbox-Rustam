@@ -1,18 +1,19 @@
 using Sandbox.Core.Entities;
 using Sandbox.Core.Enums;
 using Sandbox.Shared.DTOs;
+using Sandbox.Shared.Results;
 
 namespace Sandbox.Core.Interfaces
 {
     public interface IOrderService
     {
-        Task<OrderDto> PlaceOrderAsync(OrderDto orderDto);
-        Task ClosePositionAsync(Guid positionId);
-        Task CloseOrderAsync(Guid orderId);
-        Task SetStopLossAsync(Guid positionId, decimal stopLossPrice);
-        Task SetTakeProfitAsync(Guid positionId, decimal takeProfitPrice);
-        Task<IEnumerable<OrderDto>> GetActiveOrdersAsync(Guid walletId);
-        Task<IEnumerable<PositionDto>> GetActivePositionsAsync(Guid walletId);
+        Task<Result<OrderDto>> PlaceOrderAsync(OrderDto orderDto);
+        Task <Result<PositionDto>> ClosePositionAsync(Guid positionId);
+        Task<Result<OrderDto>> CloseOrderAsync(Guid orderId);
+        Task <Result<OrderDto>> SetStopLossAsync(Guid positionId, decimal stopLossPrice);
+        Task <Result<OrderDto>> SetTakeProfitAsync(Guid positionId, decimal takeProfitPrice);
+        Task<Result<IEnumerable<OrderDto>>> GetActiveOrdersAsync(Guid walletId);
+        Task<Result<IEnumerable<PositionDto>>> GetActivePositionsAsync(Guid walletId);
     }
 }
 

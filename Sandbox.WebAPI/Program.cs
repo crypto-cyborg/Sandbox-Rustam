@@ -22,7 +22,8 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 builder.Services.AddSingleton<IWebSocketService ,BinanceWebSocketService>();
 builder.Services.AddSingleton<WalletWebSocketService>();
-
+builder.Services.AddHostedService<BackgroundTrackingService>();
+builder.Services.AddSingleton<BackgroundTrackingService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
