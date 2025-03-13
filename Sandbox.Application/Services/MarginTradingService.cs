@@ -12,10 +12,10 @@ namespace Sandbox.Application.Services
     public class MarginTradingService : IOrderService
     {
         private readonly AppDbContext _context;
-        private readonly BinanceWebSocketService _webSocketService;
+        private readonly IWebSocketService _webSocketService;
         private readonly IMapper _mapper;
 
-        public MarginTradingService(AppDbContext context, BinanceWebSocketService webSocketService, IMapper mapper)
+        public MarginTradingService(AppDbContext context, IWebSocketService webSocketService, IMapper mapper)
         {
             _context = context;
             _webSocketService = webSocketService;

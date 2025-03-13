@@ -13,36 +13,34 @@ namespace Sandbox.Application.Services
     public class SpotTradingService : IOrderService
     {
         private readonly AppDbContext _context;
-        private readonly BinanceWebSocketService _webSocketService;
+        private readonly IWebSocketService _webSocketService;
         private readonly IMapper _mapper;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly IServiceProvider _serviceProvider;
 
-        public SpotTradingService(AppDbContext context, BinanceWebSocketService webSocketService, IMapper mapper,
-            IServiceScopeFactory scopeFactory, IServiceProvider serviceProvider)
+        public SpotTradingService(AppDbContext context, IWebSocketService webSocketService, IMapper mapper,
+            IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _webSocketService = webSocketService;
             _mapper = mapper;
             _scopeFactory = scopeFactory;
-            _serviceProvider = serviceProvider;
         }
 
         public async Task<OrderDto> PlaceOrderAsync(OrderDto orderDto)
         {
             var order = _mapper.Map<Order>(orderDto);
-            
+
             var wallet = await _context.Wallets
                 .Include(w => w.Orders)
                 .Include(w => w.Positions)
                 .FirstOrDefaultAsync(w => w.Id == order.WalletId);
 
             if (wallet == null) throw new ApplicationException("Wallet not found.");
-            
+
+            var price = await _webSocketService.GetPriceAsync(order.Symbol);
 
             if (order.Type == OrderType.Market)
             {
-                var price = await _webSocketService.GetPriceAsync(order.Symbol);
                 if (wallet.Balance < order.Quantity * price)
                     throw new ApplicationException("Insufficient balance.");
             }
@@ -51,9 +49,9 @@ namespace Sandbox.Application.Services
                 if (wallet.Balance < order.Quantity * order.Price)
                     throw new ApplicationException("Insufficient balance.");
             }
-            
 
-            wallet.Balance -= order.Quantity * order.Price;
+
+            wallet.Balance -= order.Quantity * price;
             order.Status = OrderStatus.Open;
 
             _context.Orders.Add(order);
@@ -61,8 +59,9 @@ namespace Sandbox.Application.Services
 
             _webSocketService.SubscribeAsync(order.Symbol, async (currentPrice) =>
             {
+                Console.WriteLine(currentPrice);
+
                 await TrackPosition(order, currentPrice);
-                await Task.Delay(TimeSpan.FromMinutes(5));
             });
 
             return _mapper.Map<OrderDto>(order);
@@ -73,10 +72,9 @@ namespace Sandbox.Application.Services
         {
             var scope = _scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            //var context = _serviceProvider.GetRequiredService<AppDbContext>();
 
             var position = await context.Positions
-                .FirstOrDefaultAsync(p => 
+                .FirstOrDefaultAsync(p =>
                     p.Symbol == order.Symbol && p.WalletId == order.WalletId && p.Status == PositionStatus.Open);
 
             if (position == null)
@@ -103,40 +101,8 @@ namespace Sandbox.Application.Services
             }
             else
             {
-                await context.SaveChangesAsync();
+                await ExecuteOrderAsync(order, currentPrice, context);
             }
-        }
-
-        public async Task CloseOrderAsync(Guid orderId)
-        {
-            var order = await _context.Orders.Include(o => o.Wallet).FirstOrDefaultAsync(o => o.Id == orderId);
-            if (order == null) throw new ApplicationException("Order not found.");
-
-            if (order.Type == OrderType.StopLoss || order.Type == OrderType.TakeProfit)
-            {
-                var position = await _context.Positions
-                    .FirstOrDefaultAsync(p => (p.StopLossOrderId == order.Id || p.TakeProfitOrderId == order.Id));
-
-                if (position != null)
-                {
-                    if (position.StopLossOrderId == order.Id)
-                    {
-                        position.StopLossOrderId = null;
-                        position.StopLossOrder = null;
-                    }
-
-                    if (position.TakeProfitOrderId == order.Id)
-                    {
-                        position.TakeProfitOrderId = null;
-                        position.TakeProfitOrder = null;
-                    }
-                }
-            }
-
-            order.Status = OrderStatus.Closed;
-            order.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
         }
 
         public async Task ExecuteOrderAsync(Order order, decimal executedPrice, AppDbContext context)
@@ -165,17 +131,19 @@ namespace Sandbox.Application.Services
                     Status = PositionStatus.Open,
                     OpenedAt = DateTime.UtcNow,
                     InitialMargin = order.Quantity * executedPrice,
+                    Direction = order.Direction
                 };
                 context.Positions.Add(position);
             }
             else
             {
-                var totalQuantity = position.Quantity + order.Quantity;
                 if (position.Direction == order.Direction)
                 {
+                    var totalQuantity = position.Quantity + order.Quantity;
                     position.AverageEntryPrice =
                         ((position.Quantity * position.AverageEntryPrice) + (order.Quantity * executedPrice)) /
                         totalQuantity;
+                    position.Quantity = totalQuantity;
                 }
                 else
                 {
@@ -188,18 +156,89 @@ namespace Sandbox.Application.Services
                     {
                         position.Status = PositionStatus.Closed;
                         position.ClosedAt = DateTime.UtcNow;
+                        position.Quantity = 0;
+
+                        if (order.Quantity > closedSize)
+                        {
+                            var newQuantity = order.Quantity - closedSize;
+                            var newPosition = new Position
+                            {
+                                WalletId = wallet.Id,
+                                Symbol = order.Symbol,
+                                Quantity = newQuantity,
+                                AverageEntryPrice = executedPrice,
+                                CurrentPrice = executedPrice,
+                                Status = PositionStatus.Open,
+                                OpenedAt = DateTime.UtcNow,
+                                InitialMargin = newQuantity * executedPrice,
+                                Direction = order.Direction
+                            };
+                            context.Positions.Add(newPosition);
+                        }
                     }
                     else
                     {
-                        position.Quantity -= order.Quantity;
+                        position.Quantity -= closedSize;
                     }
                 }
 
-                position.Quantity = totalQuantity;
                 position.CurrentPrice = executedPrice;
             }
 
             await context.SaveChangesAsync();
+        }
+
+        public async Task CloseOrderAsync(Guid orderId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Wallet)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null) 
+                throw new ApplicationException("Order not found.");
+
+            if (order.Type == OrderType.StopLoss || order.Type == OrderType.TakeProfit)
+            {
+                var position = await _context.Positions
+                    .FirstOrDefaultAsync(p => p.StopLossOrderId == order.Id || p.TakeProfitOrderId == order.Id);
+
+                if (position != null)
+                {
+                    if (position.StopLossOrderId == order.Id)
+                    {
+                        position.StopLossOrderId = null;
+                        position.StopLossOrder = null;
+                    }
+
+                    if (position.TakeProfitOrderId == order.Id)
+                    {
+                        position.TakeProfitOrderId = null;
+                        position.TakeProfitOrder = null;
+                    }
+                }
+            }
+
+            var closedOrder = new ClosedOrder
+            {
+                Id = order.Id,
+                WalletId = order.WalletId,
+                Wallet = order.Wallet,
+                Symbol = order.Symbol,
+                Quantity = order.Quantity,
+                Price = order.Price,
+                Type = order.Type,
+                Status = OrderStatus.Closed, 
+                Direction = order.Direction,
+                Leverage = order.Leverage,
+                ExecutedAt = order.ExecutedAt,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.ClosedOrders.Add(closedOrder);
+            _context.Orders.Remove(order); 
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task ClosePositionAsync(Guid positionId)
@@ -229,8 +268,29 @@ namespace Sandbox.Application.Services
                 pnl = Math.Min(pnl, 0);
 
             wallet.Balance += pnl;
-            position.Status = isLiquidation ? PositionStatus.Liquidated : PositionStatus.Closed;
-            position.ClosedAt = DateTime.UtcNow;
+
+           
+            var closedPosition = new ClosedPosition
+            {
+                Id = position.Id,
+                WalletId = position.WalletId,
+                Wallet = position.Wallet,
+                Symbol = position.Symbol,
+                Quantity = position.Quantity,
+                AverageEntryPrice = position.AverageEntryPrice,
+                CurrentPrice = position.CurrentPrice,
+                Status = isLiquidation ? PositionStatus.Liquidated : PositionStatus.Closed,
+                Direction = position.Direction,
+                Leverage = position.Leverage,
+                InitialMargin = position.InitialMargin,
+                MaintenanceMarginRate = position.MaintenanceMarginRate,
+                OpenedAt = position.OpenedAt,
+                ClosedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.ClosedPositions.Add(closedPosition);
+            _context.Positions.Remove(position); 
 
             await _context.SaveChangesAsync();
         }

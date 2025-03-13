@@ -33,7 +33,7 @@ namespace Sandbox.WebAPI.Middleware
             switch (exception)
             {
                 case ApplicationException appEx: 
-                    statusCode = HttpStatusCode.BadRequest; 
+                    statusCode = HttpStatusCode.NotFound; 
                     message = appEx.Message;
                     break;
 

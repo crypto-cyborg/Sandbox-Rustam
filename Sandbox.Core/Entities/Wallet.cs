@@ -6,4 +6,6 @@ public class Wallet
     public decimal Balance { get; set; }
     public List<Order> Orders { get; set; } = new List<Order>();
     public List<Position> Positions { get; set; } = new List<Position>();
+    public List<ClosedOrder> ClosedOrders { get; set; } = new List<ClosedOrder>();
+    public List<ClosedPosition> ClosedPositions { get; set; } = new List<ClosedPosition>();
 }

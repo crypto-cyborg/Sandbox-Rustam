@@ -10,6 +10,8 @@ namespace Sandbox.Infrastructure.Data
         public DbSet<Account> Accounts { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<Position> Positions { get; set; }
+        public DbSet<ClosedOrder> ClosedOrders { get; set; }
+        public DbSet<ClosedPosition> ClosedPositions { get; set; }
         public DbSet<Wallet> Wallets { get; set; }
         
         private readonly IServiceProvider _serviceProvider;
@@ -23,9 +25,11 @@ namespace Sandbox.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Account>().HasKey(a => a.Id);
+            modelBuilder.Entity<Wallet>().HasKey(w => w.Id);
             modelBuilder.Entity<Order>().HasKey(o => o.Id);
             modelBuilder.Entity<Position>().HasKey(p => p.Id);
-            modelBuilder.Entity<Wallet>().HasKey(w => w.Id);
+            modelBuilder.Entity<ClosedOrder>().HasKey(w => w.Id);
+            modelBuilder.Entity<ClosedPosition>().HasKey(w => w.Id);
             
             modelBuilder.Entity<Account>()
                 .HasOne(a => a.Wallet)
@@ -42,6 +46,18 @@ namespace Sandbox.Infrastructure.Data
             modelBuilder.Entity<Position>()
                 .HasOne(p => p.Wallet)
                 .WithMany(w => w.Positions)
+                .HasForeignKey(p => p.WalletId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<ClosedOrder>()
+                .HasOne(o => o.Wallet)
+                .WithMany(w => w.ClosedOrders)
+                .HasForeignKey(o => o.WalletId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ClosedPosition>()
+                .HasOne(p => p.Wallet)
+                .WithMany(w => w.ClosedPositions)
                 .HasForeignKey(p => p.WalletId)
                 .OnDelete(DeleteBehavior.Cascade);
 

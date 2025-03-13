@@ -20,8 +20,9 @@ builder.Services.AddKeyedScoped<IOrderService, SpotTradingService>("Spot");
 builder.Services.AddKeyedScoped<IOrderService, MarginTradingService>("Margin");
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
-builder.Services.AddSingleton<BinanceWebSocketService>();
+builder.Services.AddSingleton<IWebSocketService ,BinanceWebSocketService>();
 builder.Services.AddSingleton<WalletWebSocketService>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

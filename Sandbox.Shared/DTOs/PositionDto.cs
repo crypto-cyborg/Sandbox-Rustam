@@ -6,6 +6,7 @@ namespace Sandbox.Shared.DTOs
         public Guid WalletId { get; set; }
         public string Symbol { get; set; }
         public decimal Quantity { get; set; }
+        public decimal Volume { get; set; }
         public decimal AverageEntryPrice { get; set; } 
         public decimal CurrentPrice { get; set; }
         public string Status { get; set; }     

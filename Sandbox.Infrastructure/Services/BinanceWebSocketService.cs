@@ -2,11 +2,12 @@ using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Sandbox.Core.Interfaces;
 
 namespace Sandbox.Infrastructure.Services
 {
-    public class BinanceWebSocketService 
+    public class BinanceWebSocketService : IWebSocketService
     {
         private ClientWebSocket _webSocket;
         private readonly Dictionary<string, Action<decimal>> _priceUpdateHandlers;
@@ -128,9 +129,34 @@ namespace Sandbox.Infrastructure.Services
         {
             using var httpClient = new HttpClient();
             var response = await httpClient.GetStringAsync($"https://api.binance.com/api/v3/ticker/price?symbol={symbol}");
-            var priceData = JsonSerializer.Deserialize<BinancePriceResponse>(response);
-            return decimal.TryParse(priceData?.Price, out var price) ? price : throw new Exception("Invalid price data");
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+    
+            var priceData = JsonSerializer.Deserialize<BinancePriceResponse>(response, options);
+
+            if (priceData == null || string.IsNullOrEmpty(priceData.Price))
+            {
+                throw new Exception("Invalid or missing price data from Binance API.");
+            }
+
+            return decimal.TryParse(priceData.Price, System.Globalization.NumberStyles.Float, 
+                System.Globalization.CultureInfo.InvariantCulture, out var price) 
+                ? price 
+                : throw new Exception("Failed to parse price data.");
         }
+
+        public class BinancePriceResponse
+        {
+            [JsonPropertyName("symbol")]
+            public string Symbol { get; set; }
+
+            [JsonPropertyName("price")]
+            public string Price { get; set; }
+        }
+
 
         private class BinanceTickerMessage
         {
@@ -138,10 +164,6 @@ namespace Sandbox.Infrastructure.Services
             public string c { get; set; }  // Current price 
         }
 
-        private class BinancePriceResponse
-        {
-            public string Symbol { get; set; }
-            public string Price { get; set; }
-        }
+
     }
 }
