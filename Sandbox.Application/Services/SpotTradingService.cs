@@ -12,7 +12,7 @@ namespace Sandbox.Application.Services
 {
     public class SpotTradingService : IOrderService
     {
-        private readonly AppDbContext _context;
+        private AppDbContext _context;
         private readonly IWebSocketService _webSocketService;
         private readonly IMapper _mapper;
         private readonly IServiceScopeFactory _scopeFactory;
@@ -59,8 +59,7 @@ namespace Sandbox.Application.Services
 
             await _webSocketService.SubscribeAsync(order.Symbol, async (currentPrice) =>
             {
-                Console.WriteLine(currentPrice);
-
+                await Task.Delay(5000);
                 await TrackPosition(order, currentPrice);
             });
 
@@ -71,9 +70,9 @@ namespace Sandbox.Application.Services
         private async Task TrackPosition(Order order, decimal currentPrice)
         {
             var scope = _scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            _context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            var position = await context.Positions
+            var position = await _context.Positions
                 .FirstOrDefaultAsync(p =>
                     p.Symbol == order.Symbol && p.WalletId == order.WalletId && p.Status == PositionStatus.Open);
 
@@ -81,7 +80,7 @@ namespace Sandbox.Application.Services
             {
                 if (order.Type == OrderType.Market || (order.Type == OrderType.Limit && order.Price <= currentPrice))
                 {
-                    await ExecuteOrderAsync(order, currentPrice, context);
+                    await ExecuteOrderAsync(order, currentPrice);
                 }
 
                 return;
@@ -101,28 +100,26 @@ namespace Sandbox.Application.Services
             }
             else
             {
-                await ExecuteOrderAsync(order, currentPrice, context);
+                await ExecuteOrderAsync(order, currentPrice);
             }
         }
 
-        public async Task ExecuteOrderAsync(Order order, decimal executedPrice, AppDbContext context)
+        public async Task ExecuteOrderAsync(Order order, decimal executedPrice)
         {
-            var wallet = await context.Wallets.Include(w => w.Positions)
+            var wallet = await _context.Wallets.Include(w => w.Positions)
                 .FirstOrDefaultAsync(w => w.Id == order.WalletId);
             if (wallet == null) return;
 
-            // Обновляем статус ордера
             order.Status = OrderStatus.Executed;
             order.ExecutedAt = DateTime.UtcNow;
             order.Price = executedPrice;
 
-            var position = await context.Positions
+            var position = await _context.Positions
                 .FirstOrDefaultAsync(p =>
                     p.Symbol == order.Symbol && p.WalletId == wallet.Id && p.Status == PositionStatus.Open);
 
             if (position == null)
             {
-                // Открываем новую позицию
                 position = new Position
                 {
                     WalletId = wallet.Id,
@@ -135,13 +132,12 @@ namespace Sandbox.Application.Services
                     InitialMargin = order.Quantity * executedPrice,
                     Direction = order.Direction
                 };
-                context.Positions.Add(position);
+                _context.Positions.Add(position);
             }
             else
             {
                 if (position.Direction == order.Direction)
                 {
-                    // Добавляем объем к текущей позиции
                     var totalQuantity = position.Quantity + order.Quantity;
                     position.AverageEntryPrice =
                         ((position.Quantity * position.AverageEntryPrice) + (order.Quantity * executedPrice)) /
@@ -150,7 +146,6 @@ namespace Sandbox.Application.Services
                 }
                 else
                 {
-                    // Закрываем часть позиции
                     var closedSize = Math.Min(position.Quantity, order.Quantity);
                     decimal realizedPnL = (executedPrice - position.AverageEntryPrice) * closedSize *
                                           (position.Direction == PositionDirection.Long ? 1 : -1);
@@ -158,18 +153,16 @@ namespace Sandbox.Application.Services
 
                     if (position.Quantity == closedSize)
                     {
-                        // Позиция полностью закрыта
                         position.Status = PositionStatus.Closed;
                         position.ClosedAt = DateTime.UtcNow;
-                        context.Positions.Remove(position);
+                        _context.Positions.Remove(position);
                     }
                     else
                     {
-                        // Частично закрываем позицию
                         position.Quantity -= closedSize;
                     }
 
-                    // Если остаётся часть ордера - создаем новую позицию
+                   
                     var remainingQuantity = order.Quantity - closedSize;
                     if (remainingQuantity > 0)
                     {
@@ -185,7 +178,7 @@ namespace Sandbox.Application.Services
                             InitialMargin = remainingQuantity * executedPrice,
                             Direction = order.Direction
                         };
-                        context.Positions.Add(newPosition);
+                        _context.Positions.Add(newPosition);
                     }
                 }
 
@@ -244,8 +237,8 @@ namespace Sandbox.Application.Services
             };
 
             _context.ClosedOrders.Add(closedOrder);
+            await _context.SaveChangesAsync(); 
             _context.Orders.Remove(order);
-
             await _context.SaveChangesAsync();
         }
 

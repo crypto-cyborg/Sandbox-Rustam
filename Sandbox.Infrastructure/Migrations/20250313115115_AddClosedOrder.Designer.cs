@@ -12,7 +12,7 @@ using Sandbox.Infrastructure.Data;
 namespace Sandbox.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250313094553_AddClosedOrder")]
+    [Migration("20250313115115_AddClosedOrder")]
     partial class AddClosedOrder
     {
         /// <inheritdoc />
@@ -84,7 +84,7 @@ namespace Sandbox.Infrastructure.Migrations
 
                     b.HasIndex("WalletId");
 
-                    b.ToTable("ClosedOrder");
+                    b.ToTable("ClosedOrders");
                 });
 
             modelBuilder.Entity("Sandbox.Core.Entities.ClosedPosition", b =>
@@ -137,7 +137,7 @@ namespace Sandbox.Infrastructure.Migrations
 
                     b.HasIndex("WalletId");
 
-                    b.ToTable("ClosedPosition");
+                    b.ToTable("ClosedPositions");
                 });
 
             modelBuilder.Entity("Sandbox.Core.Entities.Order", b =>
