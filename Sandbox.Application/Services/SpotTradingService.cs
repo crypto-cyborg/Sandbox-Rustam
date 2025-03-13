@@ -57,7 +57,7 @@ namespace Sandbox.Application.Services
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            _webSocketService.SubscribeAsync(order.Symbol, async (currentPrice) =>
+            await _webSocketService.SubscribeAsync(order.Symbol, async (currentPrice) =>
             {
                 Console.WriteLine(currentPrice);
 
@@ -92,12 +92,12 @@ namespace Sandbox.Application.Services
             if (position.ShouldLiquidate())
             {
                 await ClosePosition(position, position.ShouldLiquidate());
-                _webSocketService.UnsubscribeAsync(order.Symbol);
+                await _webSocketService.UnsubscribeAsync(order.Symbol);
             }
             else if (position.ShouldStopLossTrigger() || position.ShouldTakeProfitTrigger())
             {
                 await ClosePosition(position, false);
-                _webSocketService.UnsubscribeAsync(order.Symbol);
+                await _webSocketService.UnsubscribeAsync(order.Symbol);
             }
             else
             {
@@ -111,6 +111,7 @@ namespace Sandbox.Application.Services
                 .FirstOrDefaultAsync(w => w.Id == order.WalletId);
             if (wallet == null) return;
 
+            // Обновляем статус ордера
             order.Status = OrderStatus.Executed;
             order.ExecutedAt = DateTime.UtcNow;
             order.Price = executedPrice;
@@ -121,6 +122,7 @@ namespace Sandbox.Application.Services
 
             if (position == null)
             {
+                // Открываем новую позицию
                 position = new Position
                 {
                     WalletId = wallet.Id,
@@ -139,6 +141,7 @@ namespace Sandbox.Application.Services
             {
                 if (position.Direction == order.Direction)
                 {
+                    // Добавляем объем к текущей позиции
                     var totalQuantity = position.Quantity + order.Quantity;
                     position.AverageEntryPrice =
                         ((position.Quantity * position.AverageEntryPrice) + (order.Quantity * executedPrice)) /
@@ -147,46 +150,51 @@ namespace Sandbox.Application.Services
                 }
                 else
                 {
+                    // Закрываем часть позиции
                     var closedSize = Math.Min(position.Quantity, order.Quantity);
                     decimal realizedPnL = (executedPrice - position.AverageEntryPrice) * closedSize *
                                           (position.Direction == PositionDirection.Long ? 1 : -1);
                     wallet.Balance += realizedPnL;
 
-                    if (position.Quantity == order.Quantity)
+                    if (position.Quantity == closedSize)
                     {
+                        // Позиция полностью закрыта
                         position.Status = PositionStatus.Closed;
                         position.ClosedAt = DateTime.UtcNow;
-                        position.Quantity = 0;
-
-                        if (order.Quantity > closedSize)
-                        {
-                            var newQuantity = order.Quantity - closedSize;
-                            var newPosition = new Position
-                            {
-                                WalletId = wallet.Id,
-                                Symbol = order.Symbol,
-                                Quantity = newQuantity,
-                                AverageEntryPrice = executedPrice,
-                                CurrentPrice = executedPrice,
-                                Status = PositionStatus.Open,
-                                OpenedAt = DateTime.UtcNow,
-                                InitialMargin = newQuantity * executedPrice,
-                                Direction = order.Direction
-                            };
-                            context.Positions.Add(newPosition);
-                        }
+                        context.Positions.Remove(position);
                     }
                     else
                     {
+                        // Частично закрываем позицию
                         position.Quantity -= closedSize;
+                    }
+
+                    // Если остаётся часть ордера - создаем новую позицию
+                    var remainingQuantity = order.Quantity - closedSize;
+                    if (remainingQuantity > 0)
+                    {
+                        var newPosition = new Position
+                        {
+                            WalletId = wallet.Id,
+                            Symbol = order.Symbol,
+                            Quantity = remainingQuantity,
+                            AverageEntryPrice = executedPrice,
+                            CurrentPrice = executedPrice,
+                            Status = PositionStatus.Open,
+                            OpenedAt = DateTime.UtcNow,
+                            InitialMargin = remainingQuantity * executedPrice,
+                            Direction = order.Direction
+                        };
+                        context.Positions.Add(newPosition);
                     }
                 }
 
                 position.CurrentPrice = executedPrice;
             }
 
-            await context.SaveChangesAsync();
+            await CloseOrderAsync(order.Id);
         }
+
 
         public async Task CloseOrderAsync(Guid orderId)
         {
@@ -194,7 +202,7 @@ namespace Sandbox.Application.Services
                 .Include(o => o.Wallet)
                 .FirstOrDefaultAsync(o => o.Id == orderId);
 
-            if (order == null) 
+            if (order == null)
                 throw new ApplicationException("Order not found.");
 
             if (order.Type == OrderType.StopLoss || order.Type == OrderType.TakeProfit)
@@ -227,7 +235,7 @@ namespace Sandbox.Application.Services
                 Quantity = order.Quantity,
                 Price = order.Price,
                 Type = order.Type,
-                Status = OrderStatus.Closed, 
+                Status = OrderStatus.Closed,
                 Direction = order.Direction,
                 Leverage = order.Leverage,
                 ExecutedAt = order.ExecutedAt,
@@ -236,7 +244,7 @@ namespace Sandbox.Application.Services
             };
 
             _context.ClosedOrders.Add(closedOrder);
-            _context.Orders.Remove(order); 
+            _context.Orders.Remove(order);
 
             await _context.SaveChangesAsync();
         }
@@ -269,7 +277,7 @@ namespace Sandbox.Application.Services
 
             wallet.Balance += pnl;
 
-           
+
             var closedPosition = new ClosedPosition
             {
                 Id = position.Id,
@@ -290,7 +298,7 @@ namespace Sandbox.Application.Services
             };
 
             _context.ClosedPositions.Add(closedPosition);
-            _context.Positions.Remove(position); 
+            _context.Positions.Remove(position);
 
             await _context.SaveChangesAsync();
         }
