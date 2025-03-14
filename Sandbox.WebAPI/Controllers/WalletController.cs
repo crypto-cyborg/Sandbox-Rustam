@@ -35,5 +35,27 @@ namespace Sandbox.WebAPI.Controllers
             var result = await _walletService.WithdrawAsync(walletId, transaction.Amount);
             return Ok(result);
         }
+
+        [HttpGet("{walletId}/orders")]
+        public async Task<ActionResult<IEnumerable<OrderDto>>> GetClosedOrders(Guid walletId)
+        {
+            var result = await _walletService.GetClosedOrdersAsync(walletId);
+            return Ok(result);
+        }
+
+        [HttpGet("{walletId}/positions")]
+        public async Task<ActionResult<PositionDto>> GetClosedPositions(Guid walletId)
+        {
+            var result = await _walletService.GetOpenPositionsAsync(walletId);
+            return Ok(result);
+        }
+
+        public record GetPnlRequest(DateTime StartDate, DateTime EndDate);
+        [HttpGet("{walletId}/pnl")]
+        public async Task<ActionResult<decimal>> GetPnl(Guid walletId, [FromBody] GetPnlRequest request)
+        {
+            var result = await _walletService.CalculatePnlAsync(walletId, request.StartDate, request.EndDate);
+            return Ok(result);
+        }
     }
 }

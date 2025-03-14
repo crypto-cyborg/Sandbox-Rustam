@@ -70,7 +70,7 @@ namespace Sandbox.Infrastructure.Services
         {
             if (!_trackedPositions.ContainsKey(position.Symbol))
             {
-                _trackedPositions[position.Symbol] = position;
+                _trackedPositions[position.Symbol].Add(position);
                 await SubscribeToSymbolAsync(position.Symbol);
             }
         }

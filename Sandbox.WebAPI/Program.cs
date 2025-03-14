@@ -44,7 +44,7 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseWebSockets();
 app.MapControllers();
-app.Map("/ws/wallet", async context =>
+app.MapGet("/ws/wallet", async context =>
 {
     if (context.WebSockets.IsWebSocketRequest)
     {

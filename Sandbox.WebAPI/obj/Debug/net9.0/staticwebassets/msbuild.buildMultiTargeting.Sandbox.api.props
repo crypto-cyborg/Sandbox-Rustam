@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/Sandbox.api.props" />
-</Project>

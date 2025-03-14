@@ -8,4 +8,7 @@ public interface IWalletService
     Task<Result<WalletDto>> GetWalletAsync(Guid walletId);
     Task<Result<WalletDto>> DepositAsync(Guid walletId, decimal amount);
     Task<Result<WalletDto>> WithdrawAsync(Guid walletId, decimal amount);
+    Task<Result<IEnumerable<OrderDto>>> GetClosedOrdersAsync(Guid walletId);
+    Task<Result<IEnumerable<PositionDto>>> GetOpenPositionsAsync(Guid walletId);
+    Task<Result<PnlDto>> CalculatePnlAsync(Guid walletId, DateTime startDate, DateTime endDate);
 }
