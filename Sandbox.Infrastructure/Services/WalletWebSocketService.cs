@@ -61,33 +61,33 @@ namespace Sandbox.Infrastructure.Services
             }
         }
 
-        // public async Task BroadcastUpdate(Guid walletId)
-        // {
-        //     if (_sockets.TryGetValue(walletId, out var socket) && socket.State == WebSocketState.Open)
-        //     {
-        //         using var scope = _serviceProvider.CreateScope();
-        //         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        //
-        //         var wallet = await dbContext.Wallets
-        //             .Include(w => w.Orders)
-        //             .Include(w => w.Positions)
-        //             .FirstOrDefaultAsync(w => w.Id == walletId);
-        //
-        //         if (wallet != null)
-        //         {
-        //             var response = new
-        //             {
-        //                 Balance = wallet.Balance,
-        //                 Orders = wallet.Orders.Select(o => new { o.Id, o.Symbol, o.Status, o.Quantity, o.Price }),
-        //                 Positions = wallet.Positions.Select(p => new { p.Id, p.Symbol, p.Quantity, p.AverageEntryPrice, p.CurrentPrice })
-        //             };
-        //
-        //             var json = JsonSerializer.Serialize(response);
-        //             var buffer = Encoding.UTF8.GetBytes(json);
-        //             await socket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
-        //         }
-        //     }
-        // }
+        public async Task BroadcastUpdate(Guid walletId)
+        {
+            if (_sockets.TryGetValue(walletId, out var socket) && socket.State == WebSocketState.Open)
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        
+                var wallet = await dbContext.Wallets
+                    .Include(w => w.Orders)
+                    .Include(w => w.Positions)
+                    .FirstOrDefaultAsync(w => w.Id == walletId);
+        
+                if (wallet != null)
+                {
+                    var response = new
+                    {
+                        Balance = wallet.Balance,
+                        Orders = wallet.Orders.Select(o => new { o.Id, o.Symbol, o.Status, o.Quantity, o.Price }),
+                        Positions = wallet.Positions.Select(p => new { p.Id, p.Symbol, p.Quantity, p.AverageEntryPrice, p.CurrentPrice })
+                    };
+        
+                    var json = JsonSerializer.Serialize(response);
+                    var buffer = Encoding.UTF8.GetBytes(json);
+                    await socket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+            }
+        }
     }
 }
 

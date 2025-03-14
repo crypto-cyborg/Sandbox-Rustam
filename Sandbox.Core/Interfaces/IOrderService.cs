@@ -10,7 +10,7 @@ namespace Sandbox.Core.Interfaces
         Task<Result<OrderDto>> PlaceOrderAsync(OrderDto orderDto);
         Task <Result<PositionDto>> ClosePositionAsync(Guid positionId);
         Task<Result<OrderDto>> CloseOrderAsync(Guid orderId);
-        Task <Result<OrderDto>> SetStopLossAsync(Guid positionId, decimal stopLossPrice);
+        Task <Result<OrderDto>> SetStopLossAsync(Guid Id, decimal stopLossPrice);
         Task <Result<OrderDto>> SetTakeProfitAsync(Guid positionId, decimal takeProfitPrice);
         Task<Result<IEnumerable<OrderDto>>> GetActiveOrdersAsync(Guid walletId);
         Task<Result<IEnumerable<PositionDto>>> GetActivePositionsAsync(Guid walletId);

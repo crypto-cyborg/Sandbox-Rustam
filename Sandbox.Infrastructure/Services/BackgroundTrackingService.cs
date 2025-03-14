@@ -20,7 +20,7 @@ namespace Sandbox.Infrastructure.Services
         private readonly IServiceScopeFactory _scopeFactory;
         private ClientWebSocket _webSocket;
         private readonly Dictionary<string, List<Order>> _trackedOrders;
-        private readonly Dictionary<string, Position> _trackedPositions;
+        private readonly Dictionary<string, List<Position>> _trackedPositions;
         private bool _isConnected;
         private readonly IMapper _mapper;
         private readonly WalletWebSocketService _walletWebSocket;
@@ -34,7 +34,7 @@ namespace Sandbox.Infrastructure.Services
             _scopeFactory = scopeFactory;
             _webSocket = new ClientWebSocket();
             _trackedOrders = new Dictionary<string, List<Order>>();
-            _trackedPositions = new Dictionary<string, Position>();
+            _trackedPositions = new Dictionary<string, List<Position>>();
             _isConnected = false;
             _mapper = mapper;
             _walletWebSocket = walletWebSocket;
@@ -202,17 +202,20 @@ namespace Sandbox.Infrastructure.Services
                 }
             }
 
-            if (_trackedPositions.TryGetValue(symbol, out var position))
+            if (_trackedPositions.TryGetValue(symbol, out var positions))
             {
-                position.CurrentPrice = currentPrice;
+                foreach (var position in positions)
+                {
+                    position.CurrentPrice = currentPrice;
 
-                if (position.ShouldLiquidate())
-                {
-                    await ClosePosition(position, true);
-                }
-                else if (position.ShouldStopLossTrigger() || position.ShouldTakeProfitTrigger())
-                {
-                    await ClosePosition(position, false);
+                    if (position.ShouldLiquidate())
+                    {
+                        await ClosePosition(position, true);
+                    }
+                    else if (position.ShouldStopLossTrigger() || position.ShouldTakeProfitTrigger())
+                    {
+                        await ClosePosition(position, false);
+                    }
                 }
 
                 await _context.SaveChangesAsync();

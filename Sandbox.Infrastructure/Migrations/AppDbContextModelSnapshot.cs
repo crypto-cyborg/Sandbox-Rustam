@@ -229,14 +229,14 @@ namespace Sandbox.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("StopLossOrderId")
+                    b.Property<Guid?>("StopLossId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Symbol")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("TakeProfitOrderId")
+                    b.Property<Guid?>("TakeProfitId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -247,13 +247,13 @@ namespace Sandbox.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("StopLossOrderId")
+                    b.HasIndex("StopLossId")
                         .IsUnique()
-                        .HasFilter("[StopLossOrderId] IS NOT NULL");
+                        .HasFilter("[StopLossId] IS NOT NULL");
 
-                    b.HasIndex("TakeProfitOrderId")
+                    b.HasIndex("TakeProfitId")
                         .IsUnique()
-                        .HasFilter("[TakeProfitOrderId] IS NOT NULL");
+                        .HasFilter("[TakeProfitId] IS NOT NULL");
 
                     b.HasIndex("WalletId");
 
@@ -311,12 +311,12 @@ namespace Sandbox.Infrastructure.Migrations
                 {
                     b.HasOne("Sandbox.Core.Entities.Order", "StopLossOrder")
                         .WithOne()
-                        .HasForeignKey("Sandbox.Core.Entities.Position", "StopLossOrderId")
+                        .HasForeignKey("Sandbox.Core.Entities.Position", "StopLossId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Sandbox.Core.Entities.Order", "TakeProfitOrder")
                         .WithOne()
-                        .HasForeignKey("Sandbox.Core.Entities.Position", "TakeProfitOrderId")
+                        .HasForeignKey("Sandbox.Core.Entities.Position", "TakeProfitId")
                         .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("Sandbox.Core.Entities.Wallet", "Wallet")

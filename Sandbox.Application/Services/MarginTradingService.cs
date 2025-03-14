@@ -177,18 +177,18 @@ namespace Sandbox.Application.Services
             if (order.Type == OrderType.StopLoss || order.Type == OrderType.TakeProfit)
             {
                 var position = await _context.Positions
-                    .FirstOrDefaultAsync(p => (p.StopLossOrderId == order.Id || p.TakeProfitOrderId == order.Id));
+                    .FirstOrDefaultAsync(p => (p.StopLossId == order.Id || p.TakeProfitId == order.Id));
 
                 if (position != null)
                 {
-                    if (position.StopLossOrderId == order.Id)
+                    if (position.StopLossId == order.Id)
                     {
-                        position.StopLossOrderId = null;
+                        position.StopLossId = null;
                         position.StopLossOrder = null;
                     }
-                    if (position.TakeProfitOrderId == order.Id)
+                    if (position.TakeProfitId == order.Id)
                     {
-                        position.TakeProfitOrderId = null;
+                        position.TakeProfitId = null;
                         position.TakeProfitOrder = null;
                     }
                 }
@@ -229,9 +229,9 @@ namespace Sandbox.Application.Services
             return Result<PositionDto>.Success(_mapper.Map<PositionDto>(position));
         }
         
-        public async Task<Result<OrderDto>> SetStopLossAsync(Guid positionId, decimal stopLossPrice)
+        public async Task<Result<OrderDto>> SetStopLossAsync(Guid Id, decimal stopLossPrice)
         {
-            var position = await _context.Positions.FindAsync(positionId);
+            var position = await _context.Positions.FindAsync(Id);
             if (position == null) throw new ApplicationException("Position not found.");
 
             var stopLossOrder = new Order
@@ -246,7 +246,7 @@ namespace Sandbox.Application.Services
             };
 
             _context.Orders.Add(stopLossOrder);
-            position.StopLossOrderId = stopLossOrder.Id;
+            position.StopLossId = stopLossOrder.Id;
             await _context.SaveChangesAsync();
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(stopLossOrder));
         }
@@ -268,7 +268,7 @@ namespace Sandbox.Application.Services
             };
 
             _context.Orders.Add(takeProfitOrder);
-            position.TakeProfitOrderId = takeProfitOrder.Id;
+            position.TakeProfitId = takeProfitOrder.Id;
             await _context.SaveChangesAsync();
             
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(takeProfitOrder));

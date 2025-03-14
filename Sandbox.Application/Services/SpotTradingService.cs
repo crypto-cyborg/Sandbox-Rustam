@@ -60,6 +60,17 @@ namespace Sandbox.Application.Services
                 _context.Orders.Add(order);
             }
 
+            if (orderDto.StopLoss.HasValue)
+            {
+                var newOrder = _context.Orders.FirstOrDefault(o => o.Id == order.Id);
+                SetStopLossAsync(newOrder.Id, (decimal)orderDto.StopLoss);
+            }
+            if (orderDto.TakeProfit.HasValue)
+            {
+                var newOrder = _context.Orders.FirstOrDefault(o => o.Id == order.Id);
+                SetTakeProfitAsync(newOrder.Id, (decimal)orderDto.StopLoss);
+            }
+
             await _context.SaveChangesAsync();
 
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(order));
@@ -90,50 +101,101 @@ namespace Sandbox.Application.Services
             return await _trackingService.ClosePosition(position, false);
         }
 
-        public async Task<Result<OrderDto>> SetStopLossAsync(Guid positionId, decimal stopLossPrice)
+        public async Task<Result<OrderDto>> SetStopLossAsync(Guid Id, decimal stopLossPrice)
         {
-            var position = await _context.Positions.FindAsync(positionId);
-            if (position == null) 
-                return Result<OrderDto>.Failure("Position not found.");
-
-            var stopLossOrder = new Order
+            var stopLossOrder = new Order();
+            var position = await _context.Positions.FindAsync(Id);
+            if (position == null)
             {
-                Id = Guid.NewGuid(),
-                WalletId = position.WalletId,
-                Symbol = position.Symbol,
-                Quantity = position.Quantity,
-                Price = stopLossPrice,
-                Type = OrderType.StopLoss,
-                Status = OrderStatus.Open
-            };
+                var order = await _context.Orders.FindAsync(Id);
+                if (order == null)
+                {
+                    return Result<OrderDto>.Failure("Order or Position not found.");
+                }
+                else
+                {
+                    stopLossOrder = new Order
+                    {
+                        Id = Guid.NewGuid(),
+                        WalletId = order.WalletId,
+                        Symbol = order.Symbol,
+                        Quantity = order.Quantity,
+                        Price = stopLossPrice,
+                        Type = OrderType.StopLoss,
+                        Status = OrderStatus.Open
+                    };
+                    order.StopLossId = stopLossOrder.Id;
+                }
+
+            }
+            else
+            {
+                stopLossOrder = new Order
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = position.WalletId,
+                    Symbol = position.Symbol,
+                    Quantity = position.Quantity,
+                    Price = stopLossPrice,
+                    Type = OrderType.StopLoss,
+                    Status = OrderStatus.Open
+                };
+                position.StopLossId = stopLossOrder.Id;
+            }
 
             _context.Orders.Add(stopLossOrder);
-            position.StopLossOrderId = stopLossOrder.Id;
+            
             await _context.SaveChangesAsync();
             await _trackingService.SubscribeOrderAsync(stopLossOrder);
             
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(stopLossOrder));
         }
+        
+        
 
-        public async Task<Result<OrderDto>> SetTakeProfitAsync(Guid positionId, decimal takeProfitPrice)
+        public async Task<Result<OrderDto>> SetTakeProfitAsync(Guid Id, decimal takeProfitPrice)
         {
-            var position = await _context.Positions.FindAsync(positionId);
-            if (position == null) 
-                return Result<OrderDto>.Failure("Position not found.");
-
-            var takeProfitOrder = new Order
+            var takeProfitOrder = new Order();
+            var position = await _context.Positions.FindAsync(Id);
+            if (position == null)
             {
-                Id = Guid.NewGuid(),
-                WalletId = position.WalletId,
-                Symbol = position.Symbol,
-                Quantity = position.Quantity,
-                Price = takeProfitPrice,
-                Type = OrderType.TakeProfit,
-                Status = OrderStatus.Open
-            };
+                var order = await _context.Orders.FindAsync(Id);
+                if (order == null)
+                {
+                    return Result<OrderDto>.Failure("Order or Position not found.");
+                }
+                else
+                {
+                    takeProfitOrder = new Order
+                    {
+                        Id = Guid.NewGuid(),
+                        WalletId = order.WalletId,
+                        Symbol = order.Symbol,
+                        Quantity = order.Quantity,
+                        Price = takeProfitPrice,
+                        Type = OrderType.StopLoss,
+                        Status = OrderStatus.Open
+                    };
+                    order.StopLossId = takeProfitOrder.Id;
+                }
+
+            }
+            else
+            {
+                takeProfitOrder = new Order
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = position.WalletId,
+                    Symbol = position.Symbol,
+                    Quantity = position.Quantity,
+                    Price = takeProfitPrice,
+                    Type = OrderType.StopLoss,
+                    Status = OrderStatus.Open
+                };
+                position.StopLossId = takeProfitOrder.Id;
+            }
 
             _context.Orders.Add(takeProfitOrder);
-            position.TakeProfitOrderId = takeProfitOrder.Id;
             await _context.SaveChangesAsync();
             await _trackingService.SubscribeOrderAsync(takeProfitOrder);
             
@@ -154,7 +216,26 @@ namespace Sandbox.Application.Services
             var positions = await _context.Positions
                 .Where(p => p.WalletId == walletId && p.Status == PositionStatus.Open)
                 .ToListAsync();
-            return Result<IEnumerable<PositionDto>>.Success(_mapper.Map<IEnumerable<PositionDto>>(positions));
+    
+            var positionsDto = _mapper.Map<IEnumerable<PositionDto>>(positions);
+
+            foreach (var position in positionsDto)
+            {
+                position.Pnl = (position.CurrentPrice * position.Quantity) - (position.AverageEntryPrice * position.Quantity);
+        
+                
+                if (position.AverageEntryPrice > 0)
+                {
+                    position.PnlPercentage = (position.Pnl / (position.AverageEntryPrice * position.Quantity)) * 100;
+                }
+                else
+                {
+                    position.PnlPercentage = 0; 
+                }
+            }
+
+            return Result<IEnumerable<PositionDto>>.Success(positionsDto);
         }
+
     }
 }

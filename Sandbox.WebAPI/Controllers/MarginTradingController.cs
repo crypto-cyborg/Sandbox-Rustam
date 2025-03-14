@@ -7,7 +7,7 @@ using Sandbox.Shared.DTOs;
 namespace Sandbox.WebAPI.Controllers
 {
     [ApiController]
-    [Route("api/margin-trading")]
+    [Route("api/[controller]")]
     public class MarginTradingController : ControllerBase
     {
         private readonly IOrderService _orderService;

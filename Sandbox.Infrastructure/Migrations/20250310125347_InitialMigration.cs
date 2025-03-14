@@ -119,16 +119,16 @@ namespace Sandbox.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Positions_StopLossOrderId",
                 table: "Positions",
-                column: "StopLossOrderId",
+                column: "StopLossId",
                 unique: true,
-                filter: "[StopLossOrderId] IS NOT NULL");
+                filter: "[StopLossId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Positions_TakeProfitOrderId",
                 table: "Positions",
-                column: "TakeProfitOrderId",
+                column: "TakeProfitId",
                 unique: true,
-                filter: "[TakeProfitOrderId] IS NOT NULL");
+                filter: "[TakeProfitId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Positions_WalletId",

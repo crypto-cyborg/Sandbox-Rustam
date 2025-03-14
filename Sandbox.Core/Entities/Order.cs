@@ -10,6 +10,8 @@ namespace Sandbox.Core.Entities
         public string Symbol { get; set; }
         public decimal Quantity { get; set; }
         public decimal Price { get; set; }
+        public Guid? StopLossId { get; set; }
+        public Guid? TakeProfitId { get; set; }
         public OrderType Type { get; set; }
         public OrderStatus Status { get; set; }
         public PositionDirection Direction { get; set; } 

@@ -64,13 +64,13 @@ namespace Sandbox.Infrastructure.Data
             modelBuilder.Entity<Position>()
                 .HasOne(p => p.StopLossOrder)
                 .WithOne()
-                .HasForeignKey<Position>(p => p.StopLossOrderId)
+                .HasForeignKey<Position>(p => p.StopLossId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Position>()
                 .HasOne(p => p.TakeProfitOrder)
                 .WithOne()
-                .HasForeignKey<Position>(p => p.TakeProfitOrderId)
+                .HasForeignKey<Position>(p => p.TakeProfitId)
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<Order>().Property(o => o.Quantity).HasPrecision(18, 8);
