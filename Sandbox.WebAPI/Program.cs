@@ -20,7 +20,6 @@ builder.Services.AddKeyedScoped<IOrderService, SpotTradingService>("Spot");
 builder.Services.AddKeyedScoped<IOrderService, MarginTradingService>("Margin");
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
-builder.Services.AddSingleton<IWebSocketService ,BinanceWebSocketService>();
 builder.Services.AddSingleton<WalletWebSocketService>();
 builder.Services.AddHostedService<BackgroundTrackingService>();
 builder.Services.AddSingleton<BackgroundTrackingService>();
@@ -59,6 +58,13 @@ app.Map("/ws/wallet", async context =>
         context.Response.StatusCode = 400;
     }
 });
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var service = scope.ServiceProvider.GetRequiredService<BackgroundTrackingService>();
+    await service.StartTrackingForRunAsync();
+}
 
 app.Run();
 

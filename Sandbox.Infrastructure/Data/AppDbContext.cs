@@ -84,35 +84,7 @@ namespace Sandbox.Infrastructure.Data
             modelBuilder.Entity<Position>().Property(p => p.MaintenanceMarginRate).HasPrecision(18, 4);
             modelBuilder.Entity<Wallet>().Property(w => w.Balance).HasPrecision(18, 8);
         }
-
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            var walletIdsToUpdate = ChangeTracker.Entries()
-                .Where(e => e.Entity is Wallet || e.Entity is Order || e.Entity is Position)
-                .Select(e => 
-                    (e.Entity as Wallet)?.Id 
-                    ?? (e.Entity as Order)?.WalletId 
-                    ?? (e.Entity as Position)?.WalletId)
-                .Where(id => id.HasValue && id.Value != Guid.Empty) 
-                .Select(id => id.Value) 
-                .Distinct()
-                .ToList();
-
-            int result = await base.SaveChangesAsync(cancellationToken);
-
-            if (walletIdsToUpdate.Any())
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var walletWebSocketService = scope.ServiceProvider.GetRequiredService<WalletWebSocketService>();
         
-                foreach (var walletId in walletIdsToUpdate)
-                {
-                    await walletWebSocketService.BroadcastUpdate(walletId);
-                }
-            }
-
-            return result;
-        }
 
     }
 }

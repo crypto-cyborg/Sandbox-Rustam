@@ -3,12 +3,15 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sandbox.Core.Entities;
 using Sandbox.Core.Enums;
 using Sandbox.Infrastructure.Data;
+using Sandbox.Shared.DTOs;
+using Sandbox.Shared.Results;
 
 namespace Sandbox.Infrastructure.Services
 {
@@ -19,14 +22,24 @@ namespace Sandbox.Infrastructure.Services
         private readonly Dictionary<string, List<Order>> _trackedOrders;
         private readonly Dictionary<string, Position> _trackedPositions;
         private bool _isConnected;
+        private readonly IMapper _mapper;
+        private readonly WalletWebSocketService _walletWebSocket;
 
-        public BackgroundTrackingService(IServiceScopeFactory scopeFactory)
+        private readonly AppDbContext _context;
+
+
+        public BackgroundTrackingService(IServiceScopeFactory scopeFactory, IMapper mapper,
+            WalletWebSocketService walletWebSocket)
         {
             _scopeFactory = scopeFactory;
             _webSocket = new ClientWebSocket();
             _trackedOrders = new Dictionary<string, List<Order>>();
             _trackedPositions = new Dictionary<string, Position>();
             _isConnected = false;
+            _mapper = mapper;
+            _walletWebSocket = walletWebSocket;
+            var scope = _scopeFactory.CreateScope();
+            _context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -86,7 +99,28 @@ namespace Sandbox.Infrastructure.Services
             _ = Task.Run(ReceiveAsync);
         }
 
-        private async Task SubscribeToSymbolAsync(string symbol)
+        public async Task StartTrackingForRunAsync()
+        {
+            var positions = await _context.Positions
+                .Select(p => p.Symbol)
+                .Distinct()
+                .ToListAsync();
+
+            var orders = await _context.Orders
+                .Where(o => o.Status == OrderStatus.Open)
+                .Select(o => o.Symbol)
+                .Distinct()
+                .ToListAsync();
+
+            var symbols = positions.Union(orders).ToList();
+            
+            foreach (var symbol in symbols)
+            {
+               await SubscribeToSymbolAsync(symbol);
+            }
+        }
+
+        public async Task SubscribeToSymbolAsync(string symbol)
         {
             await EnsureWebSocketConnectedAsync();
 
@@ -98,6 +132,16 @@ namespace Sandbox.Infrastructure.Services
             };
 
             await SendMessageAsync(subscribeMessage);
+        }
+
+        private async Task SendMessageAsync(object message)
+        {
+            if (_webSocket.State != WebSocketState.Open) return;
+
+            var json = JsonSerializer.Serialize(message);
+            var bytes = Encoding.UTF8.GetBytes(json);
+            await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
+                CancellationToken.None);
         }
 
         private async Task ReceiveAsync()
@@ -140,17 +184,14 @@ namespace Sandbox.Infrastructure.Services
 
         private async Task HandlePriceUpdateAsync(string symbol, decimal currentPrice)
         {
-            using var scope = _scopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
             if (_trackedOrders.TryGetValue(symbol, out var orders))
             {
-                foreach (var order in orders.ToList())
+                foreach (var order in orders)
                 {
                     if ((order.Direction == PositionDirection.Long && currentPrice <= order.Price) ||
                         (order.Direction == PositionDirection.Short && currentPrice >= order.Price))
                     {
-                        await ExecuteOrderAsync(order, currentPrice, context);
+                        await ExecuteOrderAsync(order, currentPrice);
                         _trackedOrders[symbol].Remove(order);
                     }
                 }
@@ -167,28 +208,24 @@ namespace Sandbox.Infrastructure.Services
 
                 if (position.ShouldLiquidate())
                 {
-                    await ClosePositionAsync(position, true, context);
+                    await ClosePosition(position, true);
                 }
                 else if (position.ShouldStopLossTrigger() || position.ShouldTakeProfitTrigger())
                 {
-                    await ClosePositionAsync(position, false, context);
+                    await ClosePosition(position, false);
                 }
 
-                await context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
         }
 
-        private async Task ExecuteOrderAsync(Order order, decimal executedPrice, AppDbContext context)
+        public async Task ExecuteOrderAsync(Order order, decimal executedPrice)
         {
-            var wallet = await context.Wallets.Include(w => w.Positions)
+            var wallet = await _context.Wallets.Include(w => w.Positions)
                 .FirstOrDefaultAsync(w => w.Id == order.WalletId);
             if (wallet == null) return;
 
-            order.Status = OrderStatus.Executed;
-            order.ExecutedAt = DateTime.UtcNow;
-            order.Price = executedPrice;
-
-            var position = await context.Positions
+            var position = await _context.Positions
                 .FirstOrDefaultAsync(p =>
                     p.Symbol == order.Symbol && p.WalletId == wallet.Id && p.Status == PositionStatus.Open);
 
@@ -206,7 +243,7 @@ namespace Sandbox.Infrastructure.Services
                     InitialMargin = order.Quantity * executedPrice,
                     Direction = order.Direction
                 };
-                context.Positions.Add(position);
+                _context.Positions.Add(position);
                 await SubscribePositionAsync(position);
             }
             else
@@ -218,6 +255,7 @@ namespace Sandbox.Infrastructure.Services
                         ((position.Quantity * position.AverageEntryPrice) + (order.Quantity * executedPrice)) /
                         totalQuantity;
                     position.Quantity = totalQuantity;
+                    position.UpdatedAt = DateTime.UtcNow;
                 }
                 else
                 {
@@ -230,22 +268,24 @@ namespace Sandbox.Infrastructure.Services
                     {
                         position.Status = PositionStatus.Closed;
                         position.ClosedAt = DateTime.UtcNow;
-                        context.Positions.Remove(position);
+                        _context.Positions.Remove(position);
                     }
                     else
                     {
                         position.Quantity -= closedSize;
+                        position.UpdatedAt = DateTime.UtcNow;
                     }
                 }
 
                 position.CurrentPrice = executedPrice;
             }
 
-            await CloseOrderAsync(order, context);
-            await context.SaveChangesAsync();
+            await CloseOrder(order);
+            await _context.SaveChangesAsync();
         }
 
-        private async Task CloseOrderAsync(Order order, AppDbContext context)
+
+        public async Task<Result<OrderDto>> CloseOrder(Order order)
         {
             var closedOrder = new ClosedOrder
             {
@@ -262,29 +302,65 @@ namespace Sandbox.Infrastructure.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
-            context.ClosedOrders.Add(closedOrder);
-            context.Orders.Remove(order);
-            await context.SaveChangesAsync();
+            _context.ClosedOrders.Add(closedOrder);
+            if (order.Type == OrderType.Limit)
+            {
+                await UnsubscribeSymbolAsync(order.Symbol);
+                _context.Orders.Remove(order);
+                await _context.SaveChangesAsync();
+            }
+            else if (order.Type == OrderType.StopLoss || order.Type == OrderType.TakeProfit)
+            {
+                _context.Orders.Remove(order);
+                await _context.SaveChangesAsync();
+
+                var orders = _context.Orders.Where(o => o.Symbol == order.Symbol).ToList();
+                if (orders.Count == 0)
+                {
+                    await UnsubscribeSymbolAsync(order.Symbol);
+                }
+            }
+
+            return Result<OrderDto>.Success(_mapper.Map<OrderDto>(closedOrder));
         }
 
-        private async Task ClosePositionAsync(Position position, bool isLiquidation, AppDbContext context)
+
+        public async Task<Result<PositionDto>> ClosePosition(Position position, bool isLiquidation)
         {
-            position.Status = isLiquidation ? PositionStatus.Liquidated : PositionStatus.Closed;
-            position.ClosedAt = DateTime.UtcNow;
-            context.Positions.Remove(position);
-            await UnsubscribeSymbolAsync(position.Symbol);
-            await context.SaveChangesAsync();
+            var wallet = await _context.Wallets.FindAsync(position.WalletId);
+            if (wallet == null) return Result<PositionDto>.Failure("Wallet not found.");
+
+            decimal pnl = (position.Direction == PositionDirection.Long)
+                ? (position.CurrentPrice - position.AverageEntryPrice) * position.Quantity * position.Leverage
+                : (position.AverageEntryPrice - position.CurrentPrice) * position.Quantity * position.Leverage;
+
+            if (isLiquidation)
+                pnl = Math.Min(pnl, 0);
+
+            wallet.Balance += pnl;
+
+            var closedPosition = new ClosedPosition
+            {
+                Id = position.Id,
+                WalletId = position.WalletId,
+                Symbol = position.Symbol,
+                Quantity = position.Quantity,
+                AverageEntryPrice = position.AverageEntryPrice,
+                CurrentPrice = position.CurrentPrice,
+                Status = isLiquidation ? PositionStatus.Liquidated : PositionStatus.Closed,
+                Direction = position.Direction,
+                Leverage = position.Leverage,
+                OpenedAt = position.OpenedAt,
+                ClosedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.ClosedPositions.Add(closedPosition);
+            _context.Positions.Remove(position);
+            await _context.SaveChangesAsync();
+            return Result<PositionDto>.Success(_mapper.Map<PositionDto>(closedPosition));
         }
 
-        private async Task SendMessageAsync(object message)
-        {
-            if (_webSocket.State != WebSocketState.Open) return;
-
-            var json = JsonSerializer.Serialize(message);
-            var bytes = Encoding.UTF8.GetBytes(json);
-            await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
-                CancellationToken.None);
-        }
 
         public async Task<decimal> GetPriceAsync(string symbol)
         {
@@ -315,13 +391,11 @@ namespace Sandbox.Infrastructure.Services
         public string s { get; set; }
         public string c { get; set; }
     }
-    
+
     public class BinancePriceResponse
     {
-        [JsonPropertyName("symbol")]
-        public string Symbol { get; set; }
+        [JsonPropertyName("symbol")] public string Symbol { get; set; }
 
-        [JsonPropertyName("price")]
-        public string Price { get; set; }
+        [JsonPropertyName("price")] public string Price { get; set; }
     }
 }

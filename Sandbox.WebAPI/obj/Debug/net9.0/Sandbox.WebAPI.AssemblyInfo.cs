@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Sandbox.WebAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+575a7213141cc3991f9fb17d99193b5daebfaa2e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+530ac1bd238f716f6220e2d66116146587630aa3")]
 [assembly: System.Reflection.AssemblyProductAttribute("Sandbox.WebAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Sandbox.WebAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

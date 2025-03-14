@@ -16,7 +16,6 @@ public class Position
     public decimal Leverage { get; set; } = 1;
     public decimal InitialMargin { get; set; }
     public decimal MaintenanceMarginRate { get; set; } = 0.25m;
-
     public Guid? StopLossOrderId { get; set; }
     public Order? StopLossOrder { get; set; }
     public Guid? TakeProfitOrderId { get; set; }

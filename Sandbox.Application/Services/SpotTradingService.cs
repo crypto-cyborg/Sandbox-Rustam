@@ -46,7 +46,7 @@ namespace Sandbox.Application.Services
                 order.Price = price;
                 wallet.Balance -= order.Quantity * price;
 
-                await ExecuteOrderAsync(order, price);
+                await _trackingService.ExecuteOrderAsync(order, price);
             }
             else if (order.Type == OrderType.Limit)
             {
@@ -65,68 +65,6 @@ namespace Sandbox.Application.Services
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(order));
         }
 
-        private async Task ExecuteOrderAsync(Order order, decimal executedPrice)
-        {
-            var wallet = await _context.Wallets.Include(w => w.Positions)
-                .FirstOrDefaultAsync(w => w.Id == order.WalletId);
-            if (wallet == null) return;
-
-            var position = await _context.Positions
-                .FirstOrDefaultAsync(p => p.Symbol == order.Symbol && p.WalletId == wallet.Id && p.Status == PositionStatus.Open);
-
-            if (position == null)
-            {
-                position = new Position
-                {
-                    WalletId = wallet.Id,
-                    Symbol = order.Symbol,
-                    Quantity = order.Quantity,
-                    AverageEntryPrice = executedPrice,
-                    CurrentPrice = executedPrice,
-                    Status = PositionStatus.Open,
-                    OpenedAt = DateTime.UtcNow,
-                    InitialMargin = order.Quantity * executedPrice,
-                    Direction = order.Direction
-                };
-                _context.Positions.Add(position);
-                await _trackingService.SubscribePositionAsync(position);
-            }
-            else
-            {
-                if (position.Direction == order.Direction)
-                {
-                    var totalQuantity = position.Quantity + order.Quantity;
-                    position.AverageEntryPrice =
-                        ((position.Quantity * position.AverageEntryPrice) + (order.Quantity * executedPrice)) /
-                        totalQuantity;
-                    position.Quantity = totalQuantity;
-                }
-                else
-                {
-                    var closedSize = Math.Min(position.Quantity, order.Quantity);
-                    decimal realizedPnL = (executedPrice - position.AverageEntryPrice) * closedSize *
-                                          (position.Direction == PositionDirection.Long ? 1 : -1);
-                    wallet.Balance += realizedPnL;
-
-                    if (position.Quantity == closedSize)
-                    {
-                        position.Status = PositionStatus.Closed;
-                        position.ClosedAt = DateTime.UtcNow;
-                        _context.Positions.Remove(position);
-                    }
-                    else
-                    {
-                        position.Quantity -= closedSize;
-                    }
-                }
-
-                position.CurrentPrice = executedPrice;
-            }
-
-            await CloseOrder(order);
-            await _context.SaveChangesAsync();
-        }
-
         public async Task<Result<OrderDto>> CloseOrderAsync(Guid orderId)
         {
             var order = await _context.Orders
@@ -138,46 +76,7 @@ namespace Sandbox.Application.Services
                 return Result<OrderDto>.Failure("Order not found.");
             }
             
-            return await CloseOrder(order);
-        }
-
-        private async Task<Result<OrderDto>> CloseOrder(Order order)
-        {
-            var closedOrder = new ClosedOrder
-            {
-                Id = order.Id,
-                WalletId = order.WalletId,
-                Symbol = order.Symbol,
-                Quantity = order.Quantity,
-                Price = order.Price,
-                Type = order.Type,
-                Status = OrderStatus.Closed,
-                Direction = order.Direction,
-                ExecutedAt = order.ExecutedAt,
-                CreatedAt = order.CreatedAt,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            _context.ClosedOrders.Add(closedOrder);
-            if (order.Type == OrderType.Limit)
-            {
-                await _trackingService.UnsubscribeSymbolAsync(order.Symbol);
-                _context.Orders.Remove(order);
-                await _context.SaveChangesAsync();
-            }
-            else if (order.Type == OrderType.StopLoss || order.Type == OrderType.TakeProfit)
-            {
-                _context.Orders.Remove(order);
-                await _context.SaveChangesAsync();
-                
-                var orders =  _context.Orders.Where(o => o.Symbol == order.Symbol).ToList();
-                if (orders.Count == 0)
-                {
-                    await _trackingService.UnsubscribeSymbolAsync(order.Symbol);
-                }
-            }
-            
-            return Result<OrderDto>.Success(_mapper.Map<OrderDto>(closedOrder)); 
+            return await _trackingService.CloseOrder(order);
         }
         
 
@@ -188,43 +87,7 @@ namespace Sandbox.Application.Services
 
             await _trackingService.UnsubscribeSymbolAsync(position.Symbol);
             
-            return await ClosePosition(position, false);
-        }
-
-        private async Task<Result<PositionDto>> ClosePosition(Position position, bool isLiquidation)
-        {
-            var wallet = await _context.Wallets.FindAsync(position.WalletId);
-            if (wallet == null) return Result<PositionDto>.Failure("Wallet not found.");
-
-            decimal pnl = (position.Direction == PositionDirection.Long)
-                ? (position.CurrentPrice - position.AverageEntryPrice) * position.Quantity * position.Leverage
-                : (position.AverageEntryPrice - position.CurrentPrice) * position.Quantity * position.Leverage;
-
-            if (isLiquidation)
-                pnl = Math.Min(pnl, 0);
-
-            wallet.Balance += pnl;
-
-            var closedPosition = new ClosedPosition
-            {
-                Id = position.Id,
-                WalletId = position.WalletId,
-                Symbol = position.Symbol,
-                Quantity = position.Quantity,
-                AverageEntryPrice = position.AverageEntryPrice,
-                CurrentPrice = position.CurrentPrice,
-                Status = isLiquidation ? PositionStatus.Liquidated : PositionStatus.Closed,
-                Direction = position.Direction,
-                Leverage = position.Leverage,
-                OpenedAt = position.OpenedAt,
-                ClosedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            _context.ClosedPositions.Add(closedPosition);
-            _context.Positions.Remove(position);
-            await _context.SaveChangesAsync();
-            return Result<PositionDto>.Success(_mapper.Map<PositionDto>(closedPosition));
+            return await _trackingService.ClosePosition(position, false);
         }
 
         public async Task<Result<OrderDto>> SetStopLossAsync(Guid positionId, decimal stopLossPrice)

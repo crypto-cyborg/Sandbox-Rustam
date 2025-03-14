@@ -17,10 +17,9 @@ namespace Sandbox.Application.Services
         private readonly IWebSocketService _webSocketService;
         private readonly IMapper _mapper;
 
-        public MarginTradingService(AppDbContext context, IWebSocketService webSocketService, IMapper mapper)
+        public MarginTradingService(AppDbContext context, IMapper mapper)
         {
             _context = context;
-            _webSocketService = webSocketService;
             _mapper = mapper;
         }
 
