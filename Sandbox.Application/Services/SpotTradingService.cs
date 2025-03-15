@@ -16,12 +16,14 @@ namespace Sandbox.Application.Services
         private readonly AppDbContext _context;
         private readonly BackgroundTrackingService _trackingService;
         private readonly IMapper _mapper;
+        private readonly IServiceProvider _serviceProvider;
 
-        public SpotTradingService(AppDbContext context, BackgroundTrackingService trackingService, IMapper mapper)
+        public SpotTradingService(AppDbContext context, BackgroundTrackingService trackingService, IMapper mapper, IServiceProvider serviceProvider)
         {
             _context = context;
             _trackingService = trackingService;
             _mapper = mapper;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task<Result<OrderDto>> PlaceOrderAsync(OrderDto orderDto)
@@ -73,8 +75,6 @@ namespace Sandbox.Application.Services
                 SetTakeProfitAsync(order.Id, (decimal)orderDto.StopLoss);
             }
 
-            await _context.SaveChangesAsync();
-
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(order));
         }
 
@@ -105,6 +105,8 @@ namespace Sandbox.Application.Services
 
         public async Task<Result<OrderDto>> SetStopLossAsync(Guid Id, decimal stopLossPrice)
         {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var stopLossOrder = new Order();
             var position = await _context.Positions.FindAsync(Id);
             if (position == null)
@@ -145,9 +147,9 @@ namespace Sandbox.Application.Services
                 position.StopLossId = stopLossOrder.Id;
             }
 
-            _context.Orders.Add(stopLossOrder);
+            context.Orders.Add(stopLossOrder);
             
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             await _trackingService.SubscribeOrderAsync(stopLossOrder);
             
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(stopLossOrder));
@@ -157,6 +159,8 @@ namespace Sandbox.Application.Services
 
         public async Task<Result<OrderDto>> SetTakeProfitAsync(Guid Id, decimal takeProfitPrice)
         {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var takeProfitOrder = new Order();
             var position = await _context.Positions.FindAsync(Id);
             if (position == null)
@@ -197,8 +201,8 @@ namespace Sandbox.Application.Services
                 position.StopLossId = takeProfitOrder.Id;
             }
 
-            _context.Orders.Add(takeProfitOrder);
-            await _context.SaveChangesAsync();
+            context.Orders.Add(takeProfitOrder);
+            await context.SaveChangesAsync();
             await _trackingService.SubscribeOrderAsync(takeProfitOrder);
             
             return Result<OrderDto>.Success(_mapper.Map<OrderDto>(takeProfitOrder));

@@ -2,9 +2,11 @@ using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sandbox.Infrastructure.Data;
+using Sandbox.Shared.DTOs;
 
 namespace Sandbox.Infrastructure.Services
 {
@@ -12,10 +14,12 @@ namespace Sandbox.Infrastructure.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ConcurrentDictionary<Guid, WebSocket> _sockets = new();
+        private readonly IMapper _mapper;
 
-        public WalletWebSocketService(IServiceProvider serviceProvider)
+        public WalletWebSocketService(IServiceProvider serviceProvider, IMapper mapper)
         {
             _serviceProvider = serviceProvider;
+            _mapper = mapper;
         }
 
         public async Task HandleWebSocketAsync(WebSocket webSocket, Guid walletId)
@@ -36,14 +40,8 @@ namespace Sandbox.Infrastructure.Services
 
                     if (wallet != null)
                     {
-                        var response = new
-                        {
-                            Balance = wallet.Balance,
-                            Orders = wallet.Orders.Select(o => new { o.Id, o.Symbol, o.Status, o.Quantity, o.Price }),
-                            Positions = wallet.Positions.Select(p => new { p.Id, p.Symbol, p.Quantity, p.AverageEntryPrice, p.CurrentPrice })
-                        };
-
-                        var json = JsonSerializer.Serialize(response);
+                        var dto = _mapper.Map<WalletDto>(wallet);
+                        var json = JsonSerializer.Serialize(dto);
                         var buffer = Encoding.UTF8.GetBytes(json);
                         await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
                     }

@@ -10,10 +10,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0d61680a-0a4c-4233-9be9-2c022235359b" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Sandbox-service/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Sandbox-service/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sandbox.Application/Services/SpotTradingService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Application/Services/SpotTradingService.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sandbox.Infrastructure/Services/WalletWebSocketService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Infrastructure/Services/WalletWebSocketService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.WebAPI/Controllers/WalletController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.WebAPI/Controllers/WalletController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.WebAPI/Program.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.WebAPI/Program.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +24,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/6728f66657329080f0f419df519283a455cdca7d2617a05b18553b02da52fa/Nullable.cs" root0="FORCE_HIGHLIGHTING" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
@@ -39,7 +41,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    ".NET Launch Settings Profile.Sandbox.WebAPI: http.executor": "Debug",
+    ".NET Launch Settings Profile.Sandbox.WebAPI: http.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "stats",
@@ -124,7 +126,7 @@
       <workItem from="1741985524862" duration="163000" />
       <workItem from="1741985737930" duration="1160000" />
       <workItem from="1742011335339" duration="30000" />
-      <workItem from="1742012568087" duration="7696000" />
+      <workItem from="1742012568087" duration="11249000" />
     </task>
     <servers />
   </component>
@@ -150,19 +152,6 @@
             </endOffsets>
           </properties>
           <option name="timeStamp" value="5" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DotNet Breakpoints">
-          <url>file://$PROJECT_DIR$/Sandbox.Application/Services/SpotTradingService.cs</url>
-          <line>30</line>
-          <properties documentPath="$PROJECT_DIR$/Sandbox.Application/Services/SpotTradingService.cs" containingFunctionPresentation="Method 'PlaceOrderAsync'">
-            <startOffsets>
-              <option value="982" />
-            </startOffsets>
-            <endOffsets>
-              <option value="1167" />
-            </endOffsets>
-          </properties>
-          <option name="timeStamp" value="6" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
