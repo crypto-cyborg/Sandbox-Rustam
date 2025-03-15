@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -10,7 +11,7 @@ namespace Sandbox.Infrastructure.Services
     public class WalletWebSocketService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly Dictionary<Guid, WebSocket> _sockets = new();
+        private readonly ConcurrentDictionary<Guid, WebSocket> _sockets = new();
 
         public WalletWebSocketService(IServiceProvider serviceProvider)
         {
@@ -56,7 +57,7 @@ namespace Sandbox.Infrastructure.Services
             }
             finally
             {
-                _sockets.Remove(walletId);
+                _sockets.Remove(walletId, out _);
                 await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by server", CancellationToken.None);
             }
         }

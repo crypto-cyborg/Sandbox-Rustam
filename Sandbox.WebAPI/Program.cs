@@ -44,7 +44,7 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseWebSockets();
 app.MapControllers();
-app.MapGet("/ws/wallet", async context =>
+app.Map("/ws/wallet", async context =>
 {
     if (context.WebSockets.IsWebSocketRequest)
     {
@@ -59,6 +59,7 @@ app.MapGet("/ws/wallet", async context =>
     }
 });
 
+app.MapGet("/healthcheck", () => new { Hello = "World" });
 
 using (var scope = app.Services.CreateScope())
 {

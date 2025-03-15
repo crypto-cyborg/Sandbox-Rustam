@@ -51,8 +51,8 @@ namespace Sandbox.WebAPI.Controllers
         }
 
         public record GetPnlRequest(DateTime StartDate, DateTime EndDate);
-        [HttpGet("{walletId}/pnl")]
-        public async Task<ActionResult<decimal>> GetPnl(Guid walletId, [FromBody] GetPnlRequest request)
+        [HttpPost("{walletId}/pnl")]
+        public async Task<ActionResult<PnlDto>> GetPnl(Guid walletId, [FromBody] GetPnlRequest request)
         {
             var result = await _walletService.CalculatePnlAsync(walletId, request.StartDate, request.EndDate);
             return Ok(result);

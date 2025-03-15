@@ -60,15 +60,17 @@ namespace Sandbox.Application.Services
                 _context.Orders.Add(order);
             }
 
+            await _context.SaveChangesAsync();
+
             if (orderDto.StopLoss.HasValue)
             {
-                var newOrder = _context.Orders.FirstOrDefault(o => o.Id == order.Id);
-                SetStopLossAsync(newOrder.Id, (decimal)orderDto.StopLoss);
+                // var newOrder = _context.Orders.FirstOrDefault(o => o.Id == order.Id);
+                SetStopLossAsync(order.Id, (decimal)orderDto.StopLoss);
             }
             if (orderDto.TakeProfit.HasValue)
             {
-                var newOrder = _context.Orders.FirstOrDefault(o => o.Id == order.Id);
-                SetTakeProfitAsync(newOrder.Id, (decimal)orderDto.StopLoss);
+                // var newOrder = _context.Orders.FirstOrDefault(o => o.Id == order.Id);
+                SetTakeProfitAsync(order.Id, (decimal)orderDto.StopLoss);
             }
 
             await _context.SaveChangesAsync();
