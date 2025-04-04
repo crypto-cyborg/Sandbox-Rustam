@@ -64,5 +64,12 @@ namespace Sandbox.WebAPI.Controllers
             var result = await _orderService.GetActivePositionsAsync(walletId);
             return Ok(result);
         }
+        
+        [HttpPost("settrailingstop/{walletId}")]
+        public async Task<IActionResult> SetTrailingStop(Guid walletId, [FromBody] string symbol)
+        {
+            var result = await _orderService.SetTrailingStopAsync(walletId, symbol);
+            return Ok(result);
+        }
     }
 }

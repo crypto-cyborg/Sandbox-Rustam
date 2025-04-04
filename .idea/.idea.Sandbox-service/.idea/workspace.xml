@@ -11,8 +11,13 @@
   <component name="ChangeListManager">
     <list default="true" id="0d61680a-0a4c-4233-9be9-2c022235359b" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Sandbox-service/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Sandbox-service/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sandbox.Application/Services/MarginTradingService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Application/Services/MarginTradingService.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Sandbox.Application/Services/SpotTradingService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Application/Services/SpotTradingService.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Sandbox.Infrastructure/Services/WalletWebSocketService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Infrastructure/Services/WalletWebSocketService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sandbox.Core/Entities/Position.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Core/Entities/Position.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sandbox.Core/Interfaces/IOrderService.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Core/Interfaces/IOrderService.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sandbox.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.Infrastructure/Migrations/AppDbContextModelSnapshot.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sandbox.WebAPI/Controllers/SpotTradingController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.WebAPI/Controllers/SpotTradingController.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Sandbox.WebAPI/appsettings.json" beforeDir="false" afterPath="$PROJECT_DIR$/Sandbox.WebAPI/appsettings.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,22 +44,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    ".NET Launch Settings Profile.Sandbox.WebAPI: http.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "stats",
-    "last_opened_file_path": "/home/tng/Desktop/cc/user-service/UserService.sln",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.lookFeel",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;.NET Launch Settings Profile.Sandbox.WebAPI: http.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;stats&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tng/Desktop/cc/Robot/BinanceTradingBot/BinanceTradingBot.sln&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected=".NET Launch Settings Profile.Sandbox.WebAPI: http">
     <configuration name="Sandbox.WebAPI: http" type="LaunchSettings" factoryName=".NET Launch Settings Profile">
       <option name="LAUNCH_PROFILE_PROJECT_FILE_PATH" value="$PROJECT_DIR$/Sandbox.WebAPI/Sandbox.WebAPI.csproj" />
@@ -127,6 +132,12 @@
       <workItem from="1741985737930" duration="1160000" />
       <workItem from="1742011335339" duration="30000" />
       <workItem from="1742012568087" duration="11249000" />
+      <workItem from="1742024373419" duration="2802000" />
+      <workItem from="1742027856569" duration="325000" />
+      <workItem from="1742028748308" duration="782000" />
+      <workItem from="1742029923919" duration="309000" />
+      <workItem from="1742030687379" duration="150000" />
+      <workItem from="1742031645946" duration="82000" />
     </task>
     <servers />
   </component>

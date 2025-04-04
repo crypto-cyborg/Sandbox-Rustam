@@ -14,6 +14,7 @@ namespace Sandbox.Core.Interfaces
         Task <Result<OrderDto>> SetTakeProfitAsync(Guid positionId, decimal takeProfitPrice);
         Task<Result<IEnumerable<OrderDto>>> GetActiveOrdersAsync(Guid walletId);
         Task<Result<IEnumerable<PositionDto>>> GetActivePositionsAsync(Guid walletId);
+        Task<Result<bool>> SetTrailingStopAsync(Guid positionId, string trailingStopDistance);
     }
 }
 

@@ -23,6 +23,26 @@ public class Position
     public DateTime OpenedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public decimal? TrailingStopDistance { get; set; } 
+    public decimal? StopLossPrice { get; set; } 
+    
+    public bool ShouldUpdateTrailingStop(decimal newPrice)
+    {
+        if (!TrailingStopDistance.HasValue || !StopLossPrice.HasValue)
+            return false;
+
+        if (Direction == PositionDirection.Long)
+        {
+            decimal newStopLoss = newPrice - (newPrice * TrailingStopDistance.Value / 100);
+            return newStopLoss > StopLossPrice.Value;
+        }
+        else
+        {
+            decimal newStopLoss = newPrice + (newPrice * TrailingStopDistance.Value / 100);
+            return newStopLoss < StopLossPrice.Value;
+        }
+    }
+    
 
     public decimal MaintenanceMargin => InitialMargin * MaintenanceMarginRate;
 

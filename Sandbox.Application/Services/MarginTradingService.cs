@@ -16,11 +16,14 @@ namespace Sandbox.Application.Services
         private readonly AppDbContext _context;
         private readonly IWebSocketService _webSocketService;
         private readonly IMapper _mapper;
+        private readonly BackgroundTrackingService _trackingService;
+        private readonly decimal _trailingStopDistance = 5;
 
-        public MarginTradingService(AppDbContext context, IMapper mapper)
+        public MarginTradingService(AppDbContext context, IMapper mapper, BackgroundTrackingService trackingService)
         {
             _context = context;
             _mapper = mapper;
+            _trackingService = trackingService;
         }
 
         public async Task<Result<OrderDto>> PlaceOrderAsync(OrderDto orderDto)
@@ -289,6 +292,22 @@ namespace Sandbox.Application.Services
                 .Where(p => p.WalletId == walletId && p.Status == PositionStatus.Open)
                 .ToListAsync();
             return Result<IEnumerable<PositionDto>>.Success(_mapper.Map<IEnumerable<PositionDto>>(positions));
+        }
+        
+        public async Task<Result<bool>> SetTrailingStopAsync(Guid walletId, string symbol)
+        {
+            var position = await _context.Positions.FindAsync(walletId);
+            if (position == null) throw new ApplicationException("Position not found.");
+
+            position.TrailingStopDistance = _trailingStopDistance;
+            position.StopLossPrice = position.Direction == PositionDirection.Long
+                ? position.CurrentPrice - (position.CurrentPrice * _trailingStopDistance / 100)
+                : position.CurrentPrice + (position.CurrentPrice * _trailingStopDistance / 100);
+
+            await _context.SaveChangesAsync();
+
+            await _trackingService.SubscribePositionAsync(position);
+            return Result<bool>.Success(true);
         }
     }
 }

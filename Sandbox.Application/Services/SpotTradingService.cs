@@ -17,6 +17,8 @@ namespace Sandbox.Application.Services
         private readonly BackgroundTrackingService _trackingService;
         private readonly IMapper _mapper;
         private readonly IServiceProvider _serviceProvider;
+        
+        private readonly decimal _trailingStopDistance = 5;
 
         public SpotTradingService(AppDbContext context, BackgroundTrackingService trackingService, IMapper mapper, IServiceProvider serviceProvider)
         {
@@ -243,5 +245,20 @@ namespace Sandbox.Application.Services
             return Result<IEnumerable<PositionDto>>.Success(positionsDto);
         }
 
+        public async Task<Result<bool>> SetTrailingStopAsync(Guid walletId, string symbol)
+        {
+            var position = await _context.Positions.SingleOrDefaultAsync(p => p.WalletId == walletId && p.Symbol == symbol);
+            if (position == null) throw new ApplicationException("Position not found.");
+
+            position.TrailingStopDistance = _trailingStopDistance;
+            position.StopLossPrice = position.Direction == PositionDirection.Long
+                ? position.CurrentPrice - (position.CurrentPrice * _trailingStopDistance / 100)
+                : position.CurrentPrice + (position.CurrentPrice * _trailingStopDistance / 100);
+
+            await _context.SaveChangesAsync();
+
+            await _trackingService.SubscribePositionAsync(position);
+            return Result<bool>.Success(true);
+        }
     }
 }
